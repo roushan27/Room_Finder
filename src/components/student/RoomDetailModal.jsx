@@ -36,9 +36,9 @@ export default function RoomDetailModal({ room, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-slate-900/95 border border-white/20 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="relative h-64 bg-white/5">
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 sm:p-4">
+      <div className="bg-slate-900/95 border border-white/20 rounded-t-2xl sm:rounded-2xl w-full max-w-2xl max-h-[92vh] sm:max-h-[90vh] overflow-y-auto">
+        <div className="relative h-56 sm:h-64 bg-white/5">
           {room.photos?.length > 0 ? (
             <img
               src={room.photos[activeImg]}
@@ -70,24 +70,24 @@ export default function RoomDetailModal({ room, onClose }) {
           )}
         </div>
 
-        <div className="p-6">
-          <div className="flex justify-between items-start mb-2">
-            <h2 className="text-2xl font-bold text-white">{room.title}</h2>
+        <div className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1 mb-2">
+            <h2 className="text-xl sm:text-2xl font-bold text-white">{room.title}</h2>
             {room.avg_rating > 0 && (
-              <span className="text-yellow-400 font-medium">
+              <span className="text-yellow-400 font-medium text-sm sm:text-base">
                 ⭐ {room.avg_rating.toFixed(1)} ({room.total_ratings})
               </span>
             )}
           </div>
 
-          <p className="text-white/60 mb-1">📍 {room.address}, {room.city}</p>
-          <p className="text-blue-300 text-xl font-semibold mb-4">₹{room.price}/month</p>
+          <p className="text-white/60 mb-1 text-sm sm:text-base">📍 {room.address}, {room.city}</p>
+          <p className="text-blue-300 text-lg sm:text-xl font-semibold mb-4">₹{room.price}/month</p>
 
           {room.description && (
-            <p className="text-white/70 mb-4">{room.description}</p>
+            <p className="text-white/70 mb-4 text-sm sm:text-base">{room.description}</p>
           )}
 
-          <p className="text-white/50 mb-4">
+          <p className="text-white/50 mb-4 text-sm sm:text-base">
             {room.available_rooms} of {room.total_rooms} rooms available
           </p>
 
@@ -96,7 +96,7 @@ export default function RoomDetailModal({ room, onClose }) {
               <h4 className="text-white/60 text-sm mb-2">Facilities</h4>
               <div className="flex flex-wrap gap-2">
                 {room.facilities.map((f) => (
-                  <span key={f} className="px-3 py-1 rounded-lg bg-white/10 text-white/80 text-sm">
+                  <span key={f} className="px-3 py-1 rounded-lg bg-white/10 text-white/80 text-xs sm:text-sm">
                     {f}
                   </span>
                 ))}
@@ -117,7 +117,7 @@ export default function RoomDetailModal({ room, onClose }) {
             </p>
           )}
 
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <button
               onClick={handleBook}
               disabled={booking || room.available_rooms === 0}

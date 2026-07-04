@@ -61,10 +61,10 @@ export default function EditRoomModal({ room, onClose, onUpdated }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-slate-900/95 border border-white/20 rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 sm:p-4">
+      <div className="bg-slate-900/95 border border-white/20 rounded-t-2xl sm:rounded-2xl p-4 sm:p-6 w-full max-w-lg max-h-[92vh] sm:max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-white">Edit Room</h2>
+          <h2 className="text-lg sm:text-xl font-bold text-white">Edit Room</h2>
           <button onClick={onClose} className="text-white/60 hover:text-white text-xl">✕</button>
         </div>
 
@@ -81,7 +81,7 @@ export default function EditRoomModal({ room, onClose, onUpdated }) {
 
           <div>
             <label className="text-white/60 text-sm mb-2 block">Room Type</label>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {ROOM_TYPES.map((type) => (
                 <button
                   type="button"
@@ -113,7 +113,7 @@ export default function EditRoomModal({ room, onClose, onUpdated }) {
             required
             className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:border-blue-400"
           />
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <input
               name="city"
               value={form.city}

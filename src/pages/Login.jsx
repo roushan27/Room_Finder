@@ -21,7 +21,7 @@ export default function Login() {
       setError(error.message)
       setLoading(false)
     } else {
-      navigate('/dashboard') // role ke hisaab se redirect hoga (next step mein)
+      navigate('/dashboard')
     }
   }
 
@@ -29,9 +29,9 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 px-4">
       <form
         onSubmit={handleLogin}
-        className="w-full max-w-sm bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl p-8"
+        className="w-full max-w-sm bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl p-6 sm:p-8"
       >
-        <h2 className="text-xl font-bold text-white mb-6 text-center">Log In</h2>
+        <h2 className="text-lg sm:text-xl font-bold text-white mb-6 text-center">Log In</h2>
 
         {error && (
           <p className="text-red-400 text-sm mb-4 bg-red-500/10 p-2 rounded-lg">{error}</p>

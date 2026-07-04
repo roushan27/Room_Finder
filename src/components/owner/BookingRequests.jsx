@@ -14,7 +14,6 @@ export default function BookingRequests({ refreshTrigger, onUpdated }) {
   const fetchBookings = async () => {
     setLoading(true)
 
-    // Get owner's room ids first
     const { data: rooms } = await supabase.from('rooms').select('id').eq('owner_id', user.id)
     const roomIds = rooms?.map((r) => r.id) || []
 
@@ -64,9 +63,9 @@ export default function BookingRequests({ refreshTrigger, onUpdated }) {
           key={booking.id}
           className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
         >
-          <div>
-            <p className="text-white font-medium">{booking.rooms?.title}</p>
-            <p className="text-white/60 text-sm">
+          <div className="min-w-0">
+            <p className="text-white font-medium truncate">{booking.rooms?.title}</p>
+            <p className="text-white/60 text-sm truncate">
               {booking.profiles?.full_name} {booking.profiles?.phone ? `· ${booking.profiles.phone}` : ''}
             </p>
             <p className="text-white/40 text-xs mt-1">
@@ -76,13 +75,13 @@ export default function BookingRequests({ refreshTrigger, onUpdated }) {
           <div className="flex gap-2">
             <button
               onClick={() => handleAction(booking.id, 'confirmed')}
-              className="px-4 py-2 rounded-lg bg-green-500/20 text-green-300 text-sm font-medium hover:bg-green-500/30 transition"
+              className="flex-1 sm:flex-none px-4 py-2 rounded-lg bg-green-500/20 text-green-300 text-sm font-medium hover:bg-green-500/30 transition"
             >
               Accept
             </button>
             <button
               onClick={() => handleAction(booking.id, 'cancelled')}
-              className="px-4 py-2 rounded-lg bg-red-500/20 text-red-300 text-sm font-medium hover:bg-red-500/30 transition"
+              className="flex-1 sm:flex-none px-4 py-2 rounded-lg bg-red-500/20 text-red-300 text-sm font-medium hover:bg-red-500/30 transition"
             >
               Reject
             </button>

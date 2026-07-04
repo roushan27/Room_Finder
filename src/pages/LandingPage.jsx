@@ -5,11 +5,10 @@ export default function LandingPage() {
   const navigate = useNavigate()
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 px-4">
-      <div className="w-full max-w-sm bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl p-8 text-center">
-        <h1 className="text-2xl font-bold text-white mb-8">Room Finder</h1>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 px-4 py-8">
+      <div className="w-full max-w-sm bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl p-6 sm:p-8 text-center">
+        <h1 className="text-xl sm:text-2xl font-bold text-white mb-6 sm:mb-8">Room Finder</h1>
 
-        {/* Main Login Button */}
         <button
           onClick={() => navigate('/login')}
           className="w-full py-3 rounded-xl bg-blue-500 hover:bg-blue-600 transition text-white font-semibold shadow-lg shadow-blue-500/30"
@@ -17,7 +16,6 @@ export default function LandingPage() {
           Log In
         </button>
 
-        {/* Small "Create new account" text */}
         <p className="text-white/60 text-sm mt-4">
           New here?{' '}
           <span className="text-blue-300 cursor-pointer hover:underline">
@@ -25,7 +23,6 @@ export default function LandingPage() {
           </span>
         </p>
 
-        {/* Role selector for signup */}
         <div className="flex gap-3 mt-6">
           <button
             onClick={() => navigate('/signup?role=student')}
@@ -41,7 +38,8 @@ export default function LandingPage() {
           </button>
         </div>
       </div>
-       <Footer />
+
+      <Footer />
     </div>
   )
 }
