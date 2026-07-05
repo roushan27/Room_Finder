@@ -5,7 +5,7 @@ import RoomDetailModal from './RoomDetailModal'
 
 const ROOM_TYPES = ['All', '1BHK', '2BHK', 'Independent']
 
-export default function RoomList() {
+export default function RoomList({ guestMode = false }) {
   const [rooms, setRooms] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -48,7 +48,6 @@ export default function RoomList() {
 
   return (
     <div>
-      {/* Search + Filter toggle bar */}
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
         <div className="relative flex-1">
           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/50 pointer-events-none text-lg z-10">
@@ -81,7 +80,6 @@ export default function RoomList() {
         </button>
       </div>
 
-      {/* Filters panel */}
       {showFilters && (
         <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-4 sm:p-5 mb-6 shadow-lg space-y-5">
           <div>
@@ -110,9 +108,9 @@ export default function RoomList() {
               <p className="text-white/50 text-xs uppercase tracking-wider font-semibold">
                 Max Rent
               </p>
-             <span className="text-blue-300 font-semibold text-sm bg-blue-500/10 px-3 py-1 rounded-lg">
-  {maxPrice === null ? 'No limit' : `₹${maxPrice.toLocaleString()}/mo`}
-</span>
+              <span className="text-blue-300 font-semibold text-sm bg-blue-500/10 px-3 py-1 rounded-lg">
+                {maxPrice === null ? 'No limit' : `₹${maxPrice.toLocaleString()}/mo`}
+              </span>
             </div>
             <input
               type="range"
@@ -120,10 +118,10 @@ export default function RoomList() {
               max="30000"
               step="500"
               value={maxPrice ?? 1000}
-               onChange={(e) => {
-  const val = Number(e.target.value)
-  setMaxPrice(val === 1000 ? null : val)
-}}
+              onChange={(e) => {
+                const val = Number(e.target.value)
+                setMaxPrice(val === 1000 ? null : val)
+              }}
               className="w-full h-1.5 rounded-full appearance-none bg-white/10 accent-blue-500 cursor-pointer"
             />
             <div className="flex justify-between text-white/30 text-xs mt-1">
@@ -135,9 +133,9 @@ export default function RoomList() {
           {activeFilterCount > 0 && (
             <button
               onClick={() => {
-  setRoomType('All')
-  setMaxPrice(null)
-}}
+                setRoomType('All')
+                setMaxPrice(null)
+              }}
               className="text-blue-300 text-sm hover:text-blue-200 transition"
             >
               Clear all filters
@@ -159,7 +157,11 @@ export default function RoomList() {
       )}
 
       {selectedRoom && (
-        <RoomDetailModal room={selectedRoom} onClose={() => setSelectedRoom(null)} />
+        <RoomDetailModal
+          room={selectedRoom}
+          onClose={() => setSelectedRoom(null)}
+          guestMode={guestMode}
+        />
       )}
     </div>
   )

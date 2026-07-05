@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
-import LandingPage from './pages/LandingPage'
+import BrowseRooms from './pages/BrowseRooms'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import Dashboard from './pages/Dashboard'
@@ -14,7 +14,7 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<LandingPage />} />
+          <Route path="/" element={<BrowseRooms />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
 

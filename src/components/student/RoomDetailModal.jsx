@@ -4,14 +4,24 @@ import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import RatingForm from './RatingForm'
 
-export default function RoomDetailModal({ room, onClose }) {
+export default function RoomDetailModal({ room, onClose, guestMode = false }) {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [activeImg, setActiveImg] = useState(0)
   const [booking, setBooking] = useState(false)
   const [bookingMsg, setBookingMsg] = useState('')
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false)
+
+  const requireLogin = () => {
+    setShowLoginPrompt(true)
+  }
 
   const handleBook = async () => {
+    if (guestMode || !user) {
+      requireLogin()
+      return
+    }
+
     setBooking(true)
     setBookingMsg('')
 
@@ -32,6 +42,10 @@ export default function RoomDetailModal({ room, onClose }) {
   }
 
   const handleChat = () => {
+    if (guestMode || !user) {
+      requireLogin()
+      return
+    }
     navigate(`/chat/${room.id}/${room.owner_id}`)
   }
 
@@ -111,6 +125,28 @@ export default function RoomDetailModal({ room, onClose }) {
             </div>
           )}
 
+          {showLoginPrompt && (
+            <div className="bg-blue-500/10 border border-blue-400/30 rounded-xl p-4 mb-4 text-center">
+              <p className="text-white text-sm mb-3">
+                Booking ya chat karne ke liye login karna zaroori hai
+              </p>
+              <div className="flex gap-2 justify-center">
+                <button
+                  onClick={() => navigate('/login')}
+                  className="px-4 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium transition"
+                >
+                  Log In
+                </button>
+                <button
+                  onClick={() => navigate('/signup?role=student')}
+                  className="px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm hover:bg-white/20 transition"
+                >
+                  Sign Up
+                </button>
+              </div>
+            </div>
+          )}
+
           {bookingMsg && (
             <p className="text-sm mb-3 p-2 rounded-lg bg-blue-500/10 text-blue-300">
               {bookingMsg}
@@ -133,7 +169,7 @@ export default function RoomDetailModal({ room, onClose }) {
             </button>
           </div>
 
-          <RatingForm roomId={room.id} />
+          {!guestMode && user && <RatingForm roomId={room.id} />}
         </div>
       </div>
     </div>
