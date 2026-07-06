@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useState, lazy, Suspense } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import RatingForm from './RatingForm'
-import RoomMapView from './RoomMapView'
+
+const RoomMapView = lazy(() => import('./RoomMapView'))
 
 export default function RoomDetailModal({ room, onClose, guestMode = false }) {
   const { user } = useAuth()
@@ -56,6 +57,7 @@ export default function RoomDetailModal({ room, onClose, guestMode = false }) {
             <img
               src={room.photos[activeImg]}
               alt={room.title}
+              loading="lazy"
               className="w-full h-full object-cover"
             />
           ) : (
@@ -106,7 +108,9 @@ export default function RoomDetailModal({ room, onClose, guestMode = false }) {
 
           <div className="mb-4">
             <h4 className="text-white/60 text-sm mb-2">Location</h4>
-            <RoomMapView room={room} />
+            <Suspense fallback={<div className="bg-white/5 rounded-xl h-[220px] flex items-center justify-center text-white/30 text-sm">Loading map...</div>}>
+              <RoomMapView room={room} />
+            </Suspense>
           </div>
 
           {room.facilities?.length > 0 && (
@@ -125,7 +129,7 @@ export default function RoomDetailModal({ room, onClose, guestMode = false }) {
           {room.videos?.length > 0 && (
             <div className="mb-4">
               <h4 className="text-white/60 text-sm mb-2">Videos</h4>
-              <video src={room.videos[0]} controls className="w-full rounded-xl" />
+              <video src={room.videos[0]} controls preload="none" className="w-full rounded-xl" />
             </div>
           )}
 

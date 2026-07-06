@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, lazy, Suspense } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
-import MapPicker from './MapPicker'
+
+const MapPicker = lazy(() => import('./MapPicker'))
 
 const FACILITY_OPTIONS = [
   'WiFi', 'AC', 'Food/Mess', 'Laundry', 'Parking',
@@ -15,14 +16,13 @@ export default function AddRoomForm({ onSuccess }) {
   const [form, setForm] = useState({
     title: '',
     description: '',
-    address: '',
     city: '',
     price: '',
     total_rooms: 1,
     available_rooms: 1,
     room_type: '1BHK',
   })
-  const [coords, setCoords] = useState({ lat: null, lng: null })
+  const [coords, setCoords] = useState({ lat: null, lng: null, address: '' })
   const [facilities, setFacilities] = useState([])
   const [photos, setPhotos] = useState([])
   const [videos, setVideos] = useState([])
@@ -37,6 +37,22 @@ export default function AddRoomForm({ onSuccess }) {
     setFacilities((prev) =>
       prev.includes(facility) ? prev.filter((f) => f !== facility) : [...prev, facility]
     )
+  }
+
+  const handlePhotoSelect = (e) => {
+    const newFiles = Array.from(e.target.files)
+    if (newFiles.length > 0) {
+      setPhotos((prev) => [...prev, ...newFiles])
+    }
+    e.target.value = '' // reset so selecting again (even the same files) always fires onChange
+  }
+
+  const handleVideoSelect = (e) => {
+    const newFiles = Array.from(e.target.files)
+    if (newFiles.length > 0) {
+      setVideos((prev) => [...prev, ...newFiles])
+    }
+    e.target.value = ''
   }
 
   const uploadFilesWithProgress = async (files, bucket, startPercent, endPercent, label) => {
@@ -103,7 +119,7 @@ export default function AddRoomForm({ onSuccess }) {
         owner_id: user.id,
         title: form.title,
         description: form.description,
-        address: form.address,
+        address: coords.address,
         city: form.city,
         price: parseFloat(form.price),
         total_rooms: parseInt(form.total_rooms),
@@ -123,10 +139,10 @@ export default function AddRoomForm({ onSuccess }) {
 
       setTimeout(() => {
         setForm({
-          title: '', description: '', address: '', city: '',
+          title: '', description: '', city: '',
           price: '', total_rooms: 1, available_rooms: 1, room_type: '1BHK',
         })
-        setCoords({ lat: null, lng: null })
+        setCoords({ lat: null, lng: null, address: '' })
         setFacilities([])
         setPhotos([])
         setVideos([])
@@ -188,16 +204,6 @@ export default function AddRoomForm({ onSuccess }) {
         className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:border-blue-400 disabled:opacity-50"
       />
 
-      <input
-        name="address"
-        placeholder="Locality / Area name (e.g. Boring Road)"
-        value={form.address}
-        onChange={handleChange}
-        required
-        disabled={uploading}
-        className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:border-blue-400 disabled:opacity-50"
-      />
-
       <div className="grid grid-cols-2 gap-3">
         <input
           name="city"
@@ -220,11 +226,13 @@ export default function AddRoomForm({ onSuccess }) {
         />
       </div>
 
-      <MapPicker
-        latitude={coords.lat}
-        longitude={coords.lng}
-        onChange={(lat, lng) => setCoords({ lat, lng })}
-      />
+      <Suspense fallback={<div className="bg-white/5 rounded-xl h-[250px] flex items-center justify-center text-white/30 text-sm">Loading map...</div>}>
+        <MapPicker
+          latitude={coords.lat}
+          longitude={coords.lng}
+          onChange={(lat, lng, address) => setCoords({ lat, lng, address })}
+        />
+      </Suspense>
 
       <div className="grid grid-cols-2 gap-3">
         <div>
@@ -276,17 +284,19 @@ export default function AddRoomForm({ onSuccess }) {
 
       <div>
         <label className="text-white/60 text-sm mb-1 block">
-          Photos {photos.length > 0 && `(${photos.length} selected)`}
+          Photos {photos.length > 0 && (
+            <span className="text-blue-300 font-semibold">({photos.length} selected)</span>
+          )}
         </label>
+        <p className="text-white/30 text-xs mb-1.5">
+          Tip: Hold Ctrl (Windows) or Cmd (Mac) to select multiple photos at once, or add them one batch at a time.
+        </p>
         <input
           type="file"
           accept="image/*"
           multiple
           disabled={uploading}
-          onChange={(e) => {
-            const newFiles = Array.from(e.target.files)
-            setPhotos((prev) => [...prev, ...newFiles])
-          }}
+          onChange={handlePhotoSelect}
           className="w-full text-white/60 text-sm file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-500 file:text-white disabled:opacity-50"
         />
         {photos.length > 0 && (
@@ -311,17 +321,16 @@ export default function AddRoomForm({ onSuccess }) {
 
       <div>
         <label className="text-white/60 text-sm mb-1 block">
-          Videos (optional) {videos.length > 0 && `(${videos.length} selected)`}
+          Videos (optional) {videos.length > 0 && (
+            <span className="text-blue-300 font-semibold">({videos.length} selected)</span>
+          )}
         </label>
         <input
           type="file"
           accept="video/*"
           multiple
           disabled={uploading}
-          onChange={(e) => {
-            const newFiles = Array.from(e.target.files)
-            setVideos((prev) => [...prev, ...newFiles])
-          }}
+          onChange={handleVideoSelect}
           className="w-full text-white/60 text-sm file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-500 file:text-white disabled:opacity-50"
         />
         {videos.length > 0 && (

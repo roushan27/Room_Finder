@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
-import AddRoomForm from '../../components/owner/AddRoomForm'
+import AddRoomModal from '../../components/owner/AddRoomModal'
 import RoomTable from '../../components/owner/RoomTable'
 import EditRoomModal from '../../components/owner/EditRoomModal'
 import BookingRequests from '../../components/owner/BookingRequests'
@@ -11,11 +11,13 @@ import Footer from '../../components/common/Footer'
 
 export default function OwnerDashboard() {
   const { profile } = useAuth()
-  const [showAddForm, setShowAddForm] = useState(false)
+  const [showAddModal, setShowAddModal] = useState(false)
   const [editingRoom, setEditingRoom] = useState(null)
-  const [refreshTrigger, setRefreshTrigger] = useState(0)
+  const [roomsRefreshTrigger, setRoomsRefreshTrigger] = useState(0)
+  const [bookingsRefreshTrigger, setBookingsRefreshTrigger] = useState(0)
 
-  const handleRefresh = () => setRefreshTrigger((prev) => prev + 1)
+  const refreshRooms = () => setRoomsRefreshTrigger((prev) => prev + 1)
+  const refreshBookings = () => setBookingsRefreshTrigger((prev) => prev + 1)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 p-4 sm:p-6">
@@ -25,10 +27,10 @@ export default function OwnerDashboard() {
         </h1>
         <div className="flex flex-wrap gap-2 sm:gap-3 items-center">
           <button
-            onClick={() => setShowAddForm(!showAddForm)}
-            className="px-3 sm:px-4 py-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white text-sm sm:text-base transition"
+            onClick={() => setShowAddModal(true)}
+            className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white text-sm sm:text-base font-medium transition shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50"
           >
-            {showAddForm ? 'Close' : '+ Add Room'}
+            + Add Room
           </button>
           <ChatInbox />
           <NotificationBell />
@@ -38,28 +40,33 @@ export default function OwnerDashboard() {
 
       <h2 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">Booking Requests</h2>
       <div className="mb-6 sm:mb-8">
-        <BookingRequests refreshTrigger={refreshTrigger} onUpdated={handleRefresh} />
+        <BookingRequests
+          refreshTrigger={bookingsRefreshTrigger}
+          onUpdated={() => {
+            refreshBookings()
+            refreshRooms() // room availability might have changed after accept/reject
+          }}
+        />
       </div>
 
-      {showAddForm && (
-        <div className="mb-6 sm:mb-8 max-w-2xl">
-          <AddRoomForm
-            onSuccess={() => {
-              setShowAddForm(false)
-              handleRefresh()
-            }}
-          />
-        </div>
-      )}
-
       <h2 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">My Rooms</h2>
-      <RoomTable refreshTrigger={refreshTrigger} onEdit={setEditingRoom} />
+      <RoomTable refreshTrigger={roomsRefreshTrigger} onEdit={setEditingRoom} />
+
+      {showAddModal && (
+        <AddRoomModal
+          onClose={() => setShowAddModal(false)}
+          onSuccess={() => {
+            setShowAddModal(false)
+            refreshRooms()
+          }}
+        />
+      )}
 
       {editingRoom && (
         <EditRoomModal
           room={editingRoom}
           onClose={() => setEditingRoom(null)}
-          onUpdated={handleRefresh}
+          onUpdated={refreshRooms}
         />
       )}
 

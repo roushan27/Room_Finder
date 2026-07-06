@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import RoomCard from './RoomCard'
 import RoomDetailModal from './RoomDetailModal'
-import LocationSearchBar from '../common/LocationSearchBar'
 
 const ROOM_TYPES = ['All', '1BHK', '2BHK', 'Independent']
 
@@ -24,9 +23,10 @@ export default function RoomList({ guestMode = false }) {
     setLoading(true)
     const { data, error } = await supabase
       .from('rooms')
-      .select('*')
+      .select('id, owner_id, title, description, address, city, price, total_rooms, available_rooms, room_type, facilities, photos, videos, avg_rating, total_ratings, latitude, longitude, created_at, is_active')
       .eq('is_active', true)
       .order('created_at', { ascending: false })
+      .limit(500)
 
     if (error) setError(error.message)
     else setRooms(data)
@@ -44,13 +44,26 @@ export default function RoomList({ guestMode = false }) {
 
   const activeFilterCount = (roomType !== 'All' ? 1 : 0) + (maxPrice !== null ? 1 : 0)
 
-  if (loading) return <p className="text-white/60">Loading rooms...</p>
+  if (loading) {
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="rounded-2xl overflow-hidden animate-pulse" style={{ background: 'rgba(255,255,255,0.08)' }}>
+            <div className="h-44 bg-white/10" />
+            <div className="p-4 space-y-2">
+              <div className="h-4 bg-white/10 rounded w-3/4" />
+              <div className="h-3 bg-white/10 rounded w-1/2" />
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
   if (error) return <p className="text-red-400">{error}</p>
 
   return (
     <div>
-      <LocationSearchBar />
-
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
         <div className="relative flex-1">
           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/50 pointer-events-none text-lg z-10">
