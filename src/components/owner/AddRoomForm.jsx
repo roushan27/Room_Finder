@@ -1,6 +1,7 @@
 import { useState, lazy, Suspense } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
+import { compressImage } from '../../utils/imageCompress'
 
 const MapPicker = lazy(() => import('./MapPicker'))
 
@@ -14,13 +15,8 @@ const ROOM_TYPES = ['1BHK', '2BHK', 'Independent']
 export default function AddRoomForm({ onSuccess }) {
   const { user } = useAuth()
   const [form, setForm] = useState({
-    title: '',
-    description: '',
-    city: '',
-    price: '',
-    total_rooms: 1,
-    available_rooms: 1,
-    room_type: '1BHK',
+    title: '', description: '', city: '', price: '',
+    total_rooms: 1, available_rooms: 1, room_type: '1BHK',
   })
   const [coords, setCoords] = useState({ lat: null, lng: null, address: '' })
   const [facilities, setFacilities] = useState([])
@@ -41,30 +37,36 @@ export default function AddRoomForm({ onSuccess }) {
 
   const handlePhotoSelect = (e) => {
     const newFiles = Array.from(e.target.files)
-    if (newFiles.length > 0) {
-      setPhotos((prev) => [...prev, ...newFiles])
-    }
-    e.target.value = '' // reset so selecting again (even the same files) always fires onChange
+    if (newFiles.length > 0) setPhotos((prev) => [...prev, ...newFiles])
+    e.target.value = ''
   }
 
   const handleVideoSelect = (e) => {
     const newFiles = Array.from(e.target.files)
-    if (newFiles.length > 0) {
-      setVideos((prev) => [...prev, ...newFiles])
-    }
+    if (newFiles.length > 0) setVideos((prev) => [...prev, ...newFiles])
     e.target.value = ''
   }
 
-  const uploadFilesWithProgress = async (files, bucket, startPercent, endPercent, label) => {
+  const uploadFilesWithProgress = async (files, bucket, startPercent, endPercent, label, compress) => {
     const urls = []
     const range = endPercent - startPercent
 
     for (let i = 0; i < files.length; i++) {
-      const file = files[i]
-      const fileExt = file.name.split('.').pop()
-      const uniqueName = `${user.id}/${Date.now()}-${i}-${Math.random().toString(36).slice(2, 8)}.${fileExt}`
+      let file = files[i]
+
+      if (compress) {
+        setUploadLabel(`Compressing ${label.toLowerCase()} ${i + 1} of ${files.length}...`)
+        try {
+          file = await compressImage(file)
+        } catch {
+          // if compression fails for any reason, fall back to original file
+        }
+      }
 
       setUploadLabel(`${label} ${i + 1} of ${files.length}...`)
+
+      const fileExt = compress ? 'jpg' : file.name.split('.').pop()
+      const uniqueName = `${user.id}/${Date.now()}-${i}-${Math.random().toString(36).slice(2, 8)}.${fileExt}`
 
       const { error: uploadError } = await supabase.storage
         .from(bucket)
@@ -105,11 +107,11 @@ export default function AddRoomForm({ onSuccess }) {
 
       if (hasPhotos) {
         const endPoint = hasVideos ? 70 : 90
-        photoUrls = await uploadFilesWithProgress(photos, 'room-photos', 5, endPoint, 'Uploading photo')
+        photoUrls = await uploadFilesWithProgress(photos, 'room-photos', 5, endPoint, 'Uploading photo', true)
       }
 
       if (hasVideos) {
-        videoUrls = await uploadFilesWithProgress(videos, 'room-videos', hasPhotos ? 70 : 5, 90, 'Uploading video')
+        videoUrls = await uploadFilesWithProgress(videos, 'room-videos', hasPhotos ? 70 : 5, 90, 'Uploading video', false)
       }
 
       setUploadLabel('Saving room details...')
@@ -138,10 +140,7 @@ export default function AddRoomForm({ onSuccess }) {
       setUploadLabel('Done!')
 
       setTimeout(() => {
-        setForm({
-          title: '', description: '', city: '',
-          price: '', total_rooms: 1, available_rooms: 1, room_type: '1BHK',
-        })
+        setForm({ title: '', description: '', city: '', price: '', total_rooms: 1, available_rooms: 1, room_type: '1BHK' })
         setCoords({ lat: null, lng: null, address: '' })
         setFacilities([])
         setPhotos([])
@@ -284,13 +283,9 @@ export default function AddRoomForm({ onSuccess }) {
 
       <div>
         <label className="text-white/60 text-sm mb-1 block">
-          Photos {photos.length > 0 && (
-            <span className="text-blue-300 font-semibold">({photos.length} selected)</span>
-          )}
+          Photos {photos.length > 0 && <span className="text-blue-300 font-semibold">({photos.length} selected)</span>}
         </label>
-        <p className="text-white/30 text-xs mb-1.5">
-          Tip: Hold Ctrl (Windows) or Cmd (Mac) to select multiple photos at once, or add them one batch at a time.
-        </p>
+        <p className="text-white/30 text-xs mb-1.5">Photos are automatically compressed for faster loading.</p>
         <input
           type="file"
           accept="image/*"
@@ -305,13 +300,7 @@ export default function AddRoomForm({ onSuccess }) {
               <span key={i} className="text-white/40 text-xs bg-white/5 px-2 py-1 rounded flex items-center gap-1">
                 {file.name.length > 15 ? file.name.slice(0, 15) + '...' : file.name}
                 {!uploading && (
-                  <button
-                    type="button"
-                    onClick={() => setPhotos((prev) => prev.filter((_, idx) => idx !== i))}
-                    className="text-red-400 hover:text-red-300"
-                  >
-                    ✕
-                  </button>
+                  <button type="button" onClick={() => setPhotos((prev) => prev.filter((_, idx) => idx !== i))} className="text-red-400 hover:text-red-300">✕</button>
                 )}
               </span>
             ))}
@@ -321,10 +310,9 @@ export default function AddRoomForm({ onSuccess }) {
 
       <div>
         <label className="text-white/60 text-sm mb-1 block">
-          Videos (optional) {videos.length > 0 && (
-            <span className="text-blue-300 font-semibold">({videos.length} selected)</span>
-          )}
+          Videos (optional) {videos.length > 0 && <span className="text-blue-300 font-semibold">({videos.length} selected)</span>}
         </label>
+        <p className="text-white/30 text-xs mb-1.5">Tip: record at 720p or lower for faster loading — large videos slow down viewing.</p>
         <input
           type="file"
           accept="video/*"
@@ -339,13 +327,7 @@ export default function AddRoomForm({ onSuccess }) {
               <span key={i} className="text-white/40 text-xs bg-white/5 px-2 py-1 rounded flex items-center gap-1">
                 {file.name.length > 15 ? file.name.slice(0, 15) + '...' : file.name}
                 {!uploading && (
-                  <button
-                    type="button"
-                    onClick={() => setVideos((prev) => prev.filter((_, idx) => idx !== i))}
-                    className="text-red-400 hover:text-red-300"
-                  >
-                    ✕
-                  </button>
+                  <button type="button" onClick={() => setVideos((prev) => prev.filter((_, idx) => idx !== i))} className="text-red-400 hover:text-red-300">✕</button>
                 )}
               </span>
             ))}
@@ -360,10 +342,7 @@ export default function AddRoomForm({ onSuccess }) {
             <span className="text-blue-300 font-semibold">{uploadPercent}%</span>
           </div>
           <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-blue-500 to-blue-400 rounded-full transition-all duration-300 shadow-lg shadow-blue-500/50"
-              style={{ width: `${uploadPercent}%` }}
-            />
+            <div className="h-full bg-gradient-to-r from-blue-500 to-blue-400 rounded-full transition-all duration-300 shadow-lg shadow-blue-500/50" style={{ width: `${uploadPercent}%` }} />
           </div>
         </div>
       )}
