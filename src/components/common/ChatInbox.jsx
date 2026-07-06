@@ -10,6 +10,7 @@ export default function ChatInbox() {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [hasUnread, setHasUnread] = useState(false)
+  const [openMenuKey, setOpenMenuKey] = useState(null)
   const dropdownRef = useRef(null)
 
   useEffect(() => {
@@ -31,6 +32,7 @@ export default function ChatInbox() {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setOpen(false)
+        setOpenMenuKey(null)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -115,6 +117,29 @@ export default function ChatInbox() {
     }
   }
 
+  // Deletes the ENTIRE conversation (all messages between me and this person in this room)
+  const handleDeleteConversation = async (convo, e) => {
+    e.stopPropagation()
+    setOpenMenuKey(null)
+
+    const confirmed = window.confirm(`Delete conversation with ${convo.otherName}? This removes all messages permanently.`)
+    if (!confirmed) return
+
+    const { error } = await supabase
+      .from('messages')
+      .delete()
+      .eq('room_id', convo.room_id)
+      .or(
+        `and(sender_id.eq.${user.id},receiver_id.eq.${convo.otherId}),and(sender_id.eq.${convo.otherId},receiver_id.eq.${user.id})`
+      )
+
+    if (error) {
+      alert('Delete failed: ' + error.message)
+    } else {
+      setConversations((prev) => prev.filter((c) => `${c.room_id}-${c.otherId}` !== `${convo.room_id}-${convo.otherId}`))
+    }
+  }
+
   return (
     <div className="relative" ref={dropdownRef}>
       <button
@@ -139,25 +164,53 @@ export default function ChatInbox() {
             <p className="text-white/40 text-sm text-center py-8">No conversations yet</p>
           ) : (
             <div className="divide-y divide-white/5">
-              {conversations.map((c) => (
-                <button
-                  key={`${c.room_id}-${c.otherId}`}
-                  onClick={() => openChat(c)}
-                  className="w-full text-left p-3 hover:bg-white/5 transition relative"
-                >
-                  <div className="flex justify-between items-center">
-                    <p className="text-white font-medium text-sm flex items-center gap-1.5 min-w-0 truncate">
-                      {c.unread && <span className="w-2 h-2 bg-blue-400 rounded-full flex-shrink-0" />}
-                      {c.otherName}
-                    </p>
-                    <p className="text-white/30 text-[10px] flex-shrink-0">
-                      {new Date(c.created_at).toLocaleDateString([], { day: 'numeric', month: 'short' })}
-                    </p>
+              {conversations.map((c) => {
+                const key = `${c.room_id}-${c.otherId}`
+                return (
+                  <div key={key} className="relative group">
+                    <button
+                      onClick={() => openChat(c)}
+                      className="w-full text-left p-3 pr-10 hover:bg-white/5 transition"
+                    >
+                      <div className="flex justify-between items-center">
+                        <p className="text-white font-medium text-sm flex items-center gap-1.5 min-w-0 truncate">
+                          {c.unread && <span className="w-2 h-2 bg-blue-400 rounded-full flex-shrink-0" />}
+                          {c.otherName}
+                        </p>
+                        <p className="text-white/30 text-[10px] flex-shrink-0">
+                          {new Date(c.created_at).toLocaleDateString([], { day: 'numeric', month: 'short' })}
+                        </p>
+                      </div>
+                      <p className="text-white/40 text-xs mt-0.5 truncate">{c.roomTitle}</p>
+                      <p className="text-white/50 text-xs mt-1 truncate">{c.text}</p>
+                    </button>
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setOpenMenuKey(openMenuKey === key ? null : key)
+                      }}
+                      className="absolute top-3 right-2 text-white/40 hover:text-white text-sm px-1 opacity-0 group-hover:opacity-100 transition"
+                    >
+                      ⋮
+                    </button>
+
+                    {openMenuKey === key && (
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        className="absolute top-9 right-2 bg-slate-800 border border-white/20 rounded-lg shadow-xl z-10 overflow-hidden"
+                      >
+                        <button
+                          onClick={(e) => handleDeleteConversation(c, e)}
+                          className="px-4 py-2 text-red-300 text-sm hover:bg-white/10 transition whitespace-nowrap"
+                        >
+                          🗑️ Delete conversation
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  <p className="text-white/40 text-xs mt-0.5 truncate">{c.roomTitle}</p>
-                  <p className="text-white/50 text-xs mt-1 truncate">{c.text}</p>
-                </button>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>

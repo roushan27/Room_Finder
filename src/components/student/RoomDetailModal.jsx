@@ -9,12 +9,20 @@ const RoomMapView = lazy(() => import('./RoomMapView'))
 export default function RoomDetailModal({ room, onClose, guestMode = false }) {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const [activeImg, setActiveImg] = useState(0)
+  const [activeIdx, setActiveIdx] = useState(0)
   const [booking, setBooking] = useState(false)
   const [bookingMsg, setBookingMsg] = useState('')
   const [showLoginPrompt, setShowLoginPrompt] = useState(false)
 
   const requireLogin = () => setShowLoginPrompt(true)
+
+  // Merge photos and videos into one gallery, videos always at the end
+  const mediaItems = [
+    ...(room.photos || []).map((url) => ({ type: 'photo', url })),
+    ...(room.videos || []).map((url) => ({ type: 'video', url })),
+  ]
+  const mediaCount = mediaItems.length
+  const activeMedia = mediaItems[activeIdx]
 
   const handleBook = async () => {
     if (guestMode || !user) {
@@ -49,41 +57,85 @@ export default function RoomDetailModal({ room, onClose, guestMode = false }) {
     navigate(`/chat/${room.id}/${room.owner_id}`)
   }
 
+  const goPrev = () => setActiveIdx((prev) => (prev === 0 ? mediaCount - 1 : prev - 1))
+  const goNext = () => setActiveIdx((prev) => (prev === mediaCount - 1 ? 0 : prev + 1))
+
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 sm:p-4">
       <div className="bg-slate-900/95 border border-white/20 rounded-t-2xl sm:rounded-2xl w-full max-w-2xl max-h-[92vh] sm:max-h-[90vh] overflow-y-auto">
-        <div className="relative h-56 sm:h-64 bg-white/5">
-          {room.photos?.length > 0 ? (
-            <img
-              src={room.photos[activeImg]}
-              alt={room.title}
-              loading="lazy"
-              className="w-full h-full object-cover"
-            />
+        <div className="relative h-56 sm:h-64 bg-black flex items-center justify-center">
+          {mediaCount > 0 ? (
+            activeMedia.type === 'photo' ? (
+              <img
+                src={activeMedia.url}
+                alt={room.title}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <video
+                src={activeMedia.url}
+                controls
+                className="w-full h-full object-contain bg-black"
+              />
+            )
           ) : (
             <div className="w-full h-full flex items-center justify-center text-white/20">
-              No photo available
+              No media available
             </div>
           )}
           <button
             onClick={onClose}
-            className="absolute top-3 right-3 bg-black/60 text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/80"
+            className="absolute top-3 right-3 bg-black/60 text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/80 z-10"
           >
             ✕
           </button>
 
-          {room.photos?.length > 1 && (
-            <div className="absolute bottom-3 left-3 flex gap-1">
-              {room.photos.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setActiveImg(i)}
-                  className={`w-2 h-2 rounded-full ${i === activeImg ? 'bg-blue-400' : 'bg-white/40'}`}
-                />
-              ))}
-            </div>
+          {mediaCount > 1 && (
+            <>
+              <button
+                onClick={goPrev}
+                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/70"
+              >
+                ‹
+              </button>
+              <button
+                onClick={goNext}
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/70"
+              >
+                ›
+              </button>
+              <span className="absolute bottom-3 right-3 bg-black/60 text-white text-xs px-2 py-1 rounded-full">
+                {activeIdx + 1} / {mediaCount}
+              </span>
+            </>
           )}
         </div>
+
+        {/* Thumbnail strip — photos first, videos at the end with a play icon overlay */}
+        {mediaCount > 1 && (
+          <div className="flex gap-2 overflow-x-auto p-3 bg-black/20">
+            {mediaItems.map((item, i) => (
+              <button
+                key={i}
+                onClick={() => setActiveIdx(i)}
+                className={`relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition ${
+                  i === activeIdx ? 'border-blue-400 opacity-100' : 'border-white/10 opacity-60 hover:opacity-90'
+                }`}
+              >
+                {item.type === 'photo' ? (
+                  <img src={item.url} alt={`Media ${i + 1}`} className="w-full h-full object-cover" />
+                ) : (
+                  <>
+                    <video src={item.url} className="w-full h-full object-cover" />
+                    <span className="absolute inset-0 flex items-center justify-center bg-black/30 text-white text-lg">
+                      ▶
+                    </span>
+                  </>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
 
         <div className="p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1 mb-2">
@@ -123,13 +175,6 @@ export default function RoomDetailModal({ room, onClose, guestMode = false }) {
                   </span>
                 ))}
               </div>
-            </div>
-          )}
-
-          {room.videos?.length > 0 && (
-            <div className="mb-4">
-              <h4 className="text-white/60 text-sm mb-2">Videos</h4>
-              <video src={room.videos[0]} controls preload="none" className="w-full rounded-xl" />
             </div>
           )}
 

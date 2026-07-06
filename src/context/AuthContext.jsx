@@ -22,9 +22,14 @@ export function AuthProvider({ children }) {
     })
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      // Important: set loading true BEFORE fetching the profile, otherwise
+      // Dashboard/ProtectedRoute read a stale (null) profile with loading=false
+      // right after login and redirect incorrectly on the first attempt.
+      setLoading(true)
       setUser(session?.user ?? null)
-      if (session?.user) fetchProfile(session.user.id)
-      else {
+      if (session?.user) {
+        fetchProfile(session.user.id)
+      } else {
         setProfile(null)
         setLoading(false)
       }

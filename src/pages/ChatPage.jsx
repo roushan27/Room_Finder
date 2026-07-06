@@ -11,6 +11,7 @@ export default function ChatPage() {
   const [text, setText] = useState('')
   const [otherName, setOtherName] = useState('')
   const [loading, setLoading] = useState(true)
+  const [openMenuId, setOpenMenuId] = useState(null)
   const bottomRef = useRef(null)
 
   useEffect(() => {
@@ -26,8 +27,26 @@ export default function ChatPage() {
         (payload) => {
           setMessages((prev) => [...prev, payload.new])
           if (payload.new.receiver_id === user.id) {
-            supabase.from('messages').update({ is_read: true }).eq('id', payload.new.id).then(() => {})
+            supabase
+              .from('messages')
+              .update({ is_read: true, is_delivered: true })
+              .eq('id', payload.new.id)
+              .then(() => {})
           }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'messages', filter: `room_id=eq.${roomId}` },
+        (payload) => {
+          setMessages((prev) => prev.map((m) => (m.id === payload.new.id ? payload.new : m)))
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'messages', filter: `room_id=eq.${roomId}` },
+        (payload) => {
+          setMessages((prev) => prev.filter((m) => m.id !== payload.old.id))
         }
       )
       .subscribe()
@@ -40,6 +59,12 @@ export default function ChatPage() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  useEffect(() => {
+    const closeMenu = () => setOpenMenuId(null)
+    document.addEventListener('click', closeMenu)
+    return () => document.removeEventListener('click', closeMenu)
+  }, [])
 
   const fetchOtherProfile = async () => {
     const { data } = await supabase
@@ -68,7 +93,7 @@ export default function ChatPage() {
   const markAsRead = async () => {
     await supabase
       .from('messages')
-      .update({ is_read: true })
+      .update({ is_read: true, is_delivered: true })
       .eq('room_id', roomId)
       .eq('sender_id', otherUserId)
       .eq('receiver_id', user.id)
@@ -87,9 +112,27 @@ export default function ChatPage() {
       sender_id: user.id,
       receiver_id: otherUserId,
       text: messageText,
+      is_delivered: false,
+      is_read: false,
     })
 
     if (error) alert('Message send failed: ' + error.message)
+  }
+
+  const handleDelete = async (messageId) => {
+    setOpenMenuId(null)
+    const { error } = await supabase.from('messages').delete().eq('id', messageId)
+    if (error) {
+      alert('Delete failed: ' + error.message)
+    } else {
+      setMessages((prev) => prev.filter((m) => m.id !== messageId))
+    }
+  }
+
+  const getTickStatus = (msg) => {
+    if (msg.is_read) return 'read' // green double tick
+    if (msg.is_delivered) return 'delivered' // grey double tick
+    return 'sent' // single grey tick
   }
 
   const groupedMessages = messages.reduce((groups, msg, idx) => {
@@ -110,10 +153,7 @@ export default function ChatPage() {
   return (
     <div className="h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex flex-col">
       <div className="flex items-center gap-3 p-3 sm:p-4 border-b border-white/10 bg-white/5 backdrop-blur-xl flex-shrink-0">
-        <button
-          onClick={() => navigate(-1)}
-          className="text-white/60 hover:text-white text-xl"
-        >
+        <button onClick={() => navigate(-1)} className="text-white/60 hover:text-white text-xl">
           ←
         </button>
         <h2 className="text-white font-semibold text-sm sm:text-base truncate">{otherName || 'Chat'}</h2>
@@ -136,29 +176,61 @@ export default function ChatPage() {
                   const isLast = i === group.length - 1
 
                   return (
-                    <div
-                      key={msg.id}
-                      className={`max-w-[85%] sm:max-w-xs md:max-w-md px-3 sm:px-4 py-2 ${
-                        isMe
-                          ? `bg-blue-500 text-white ${isFirst ? 'rounded-t-2xl' : 'rounded-t-md'} ${
-                              isLast ? 'rounded-bl-2xl rounded-br-sm' : 'rounded-b-md'
-                            }`
-                          : `bg-white/10 text-white ${isFirst ? 'rounded-t-2xl' : 'rounded-t-md'} ${
-                              isLast ? 'rounded-br-2xl rounded-bl-sm' : 'rounded-b-md'
-                            }`
-                      }`}
-                    >
-                      <p className="text-sm break-words">{msg.text}</p>
+                    <div key={msg.id} className="relative group flex items-center gap-1">
+                      {isMe && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setOpenMenuId(openMenuId === msg.id ? null : msg.id)
+                          }}
+                          className="opacity-0 group-hover:opacity-100 text-white/40 hover:text-white text-sm px-1 transition"
+                        >
+                          ⋮
+                        </button>
+                      )}
+
+                      <div
+                        className={`max-w-[85%] sm:max-w-xs md:max-w-md px-3 sm:px-4 py-2 ${
+                          isMe
+                            ? `bg-blue-500 text-white ${isFirst ? 'rounded-t-2xl' : 'rounded-t-md'} ${
+                                isLast ? 'rounded-bl-2xl rounded-br-sm' : 'rounded-b-md'
+                              }`
+                            : `bg-white/10 text-white ${isFirst ? 'rounded-t-2xl' : 'rounded-t-md'} ${
+                                isLast ? 'rounded-br-2xl rounded-bl-sm' : 'rounded-b-md'
+                              }`
+                        }`}
+                      >
+                        <p className="text-sm break-words">{msg.text}</p>
+                      </div>
+
+                      {isMe && openMenuId === msg.id && (
+                        <div
+                          onClick={(e) => e.stopPropagation()}
+                          className="absolute right-full mr-1 top-0 bg-slate-800 border border-white/20 rounded-lg shadow-xl z-10 overflow-hidden"
+                        >
+                          <button
+                            onClick={() => handleDelete(msg.id)}
+                            className="px-4 py-2 text-red-300 text-sm hover:bg-white/10 transition whitespace-nowrap"
+                          >
+                            🗑️ Delete
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )
                 })}
+
                 <div className="flex items-center gap-1 px-1">
                   <p className="text-[10px] text-white/30">
                     {new Date(lastMsg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>
                   {isMe && (
-                    <span className="text-[10px] text-white/30">
-                      {lastMsg.is_read ? '✓✓' : '✓'}
+                    <span
+                      className={`text-[11px] ${
+                        getTickStatus(lastMsg) === 'read' ? 'text-green-400' : 'text-white/30'
+                      }`}
+                    >
+                      {getTickStatus(lastMsg) === 'sent' ? '✓' : '✓✓'}
                     </span>
                   )}
                 </div>
