@@ -1,9 +1,8 @@
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
+import { useState, useEffect } from 'react'
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { useLocation } from '../../context/LocationContext'
 import { calculateDistance, formatDistance } from '../../utils/distance'
-import LocationSearchBar from '../common/LocationSearchBar'
 
 delete L.Icon.Default.prototype._getIconUrl
 L.Icon.Default.mergeOptions({
@@ -12,17 +11,50 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 })
 
-const referenceIcon = new L.Icon({
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  className: 'hue-rotate-90', // visually distinguish reference marker a bit
+// Custom pulsing blue dot, like Google Maps' "you are here" marker
+const currentLocationIcon = L.divIcon({
+  className: 'current-location-marker',
+  html: `<div style="position: relative; width: 20px; height: 20px;">
+      <div style="position: absolute; inset: 0; background: #3b82f6; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 8px rgba(59,130,246,0.8);"></div>
+      <div style="position: absolute; inset: -6px; background: rgba(59,130,246,0.3); border-radius: 50%; animation: pulseLoc 2s infinite;"></div>
+    </div>
+    <style>@keyframes pulseLoc { 0% { transform: scale(0.8); opacity: 0.8; } 70% { transform: scale(2); opacity: 0; } 100% { transform: scale(0.8); opacity: 0; } }</style>`,
+  iconSize: [20, 20],
+  iconAnchor: [10, 10],
 })
 
+function FlyTo({ position, trigger }) {
+  const map = useMap()
+  useEffect(() => {
+    if (position) map.flyTo(position, 15, { duration: 0.8 })
+  }, [trigger])
+  return null
+}
+
 export default function RoomMapView({ room }) {
-  const { referenceLocation } = useLocation()
+  const [liveLocation, setLiveLocation] = useState(null)
+  const [locationError, setLocationError] = useState('')
+  const [flyTrigger, setFlyTrigger] = useState(0)
+
+  // Automatically asks for browser location permission as soon as the map opens
+  useEffect(() => {
+    if (!navigator.geolocation) return
+
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        setLiveLocation([pos.coords.latitude, pos.coords.longitude])
+        setLocationError('')
+      },
+      (err) => {
+        setLocationError(
+          err.code === 1 ? 'Location permission denied' : 'Unable to get your location'
+        )
+      },
+      { enableHighAccuracy: true, maximumAge: 5000 }
+    )
+
+    return () => navigator.geolocation.clearWatch(watchId)
+  }, [])
 
   if (!room.latitude || !room.longitude) {
     return (
@@ -32,43 +64,49 @@ export default function RoomMapView({ room }) {
     )
   }
 
-  const distance = referenceLocation
-    ? calculateDistance(referenceLocation.lat, referenceLocation.lng, room.latitude, room.longitude)
+  const distance = liveLocation
+    ? calculateDistance(liveLocation[0], liveLocation[1], room.latitude, room.longitude)
     : null
 
-  const center = referenceLocation
-    ? [
-        (referenceLocation.lat + room.latitude) / 2,
-        (referenceLocation.lng + room.longitude) / 2,
-      ]
+  const center = liveLocation
+    ? [(liveLocation[0] + room.latitude) / 2, (liveLocation[1] + room.longitude) / 2]
     : [room.latitude, room.longitude]
 
   return (
     <div className="space-y-2">
       <div className="rounded-xl overflow-hidden border border-white/20" style={{ height: '220px' }}>
         <MapContainer center={center} zoom={13} style={{ height: '100%', width: '100%' }} scrollWheelZoom={false}>
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution="&copy; OpenStreetMap contributors"
-          />
+          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap contributors" />
           <Marker position={[room.latitude, room.longitude]}>
             <Popup>{room.title}</Popup>
           </Marker>
-          {referenceLocation && (
-            <Marker position={[referenceLocation.lat, referenceLocation.lng]} icon={referenceIcon}>
-              <Popup>Your location</Popup>
+          {liveLocation && (
+            <Marker position={liveLocation} icon={currentLocationIcon}>
+              <Popup>You are here</Popup>
             </Marker>
           )}
+          <FlyTo position={liveLocation} trigger={flyTrigger} />
         </MapContainer>
       </div>
 
-      {distance !== null && (
-        <p className="text-blue-300 text-sm font-medium">
-          📏 {formatDistance(distance)} from {referenceLocation.label}
-        </p>
-      )}
+      <div className="flex justify-between items-center">
+        {distance !== null ? (
+          <p className="text-blue-300 text-sm font-medium">📏 {formatDistance(distance)} from your location</p>
+        ) : locationError ? (
+          <p className="text-red-400 text-xs">{locationError}</p>
+        ) : (
+          <p className="text-white/30 text-xs">Detecting your location...</p>
+        )}
 
-      <LocationSearchBar compact />
+        {liveLocation && (
+          <button
+            onClick={() => setFlyTrigger((prev) => prev + 1)}
+            className="text-blue-300 text-xs hover:text-blue-200 transition"
+          >
+            📍 Center on me
+          </button>
+        )}
+      </div>
     </div>
   )
 }

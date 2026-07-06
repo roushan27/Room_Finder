@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import { compressImage } from '../../utils/imageCompress'
@@ -26,6 +26,26 @@ export default function AddRoomForm({ onSuccess }) {
   const [uploadPercent, setUploadPercent] = useState(0)
   const [uploadLabel, setUploadLabel] = useState('')
   const [error, setError] = useState('')
+
+  // Restore any draft saved before the tab was minimized/reloaded
+useEffect(() => {
+  const saved = sessionStorage.getItem('addRoomDraft')
+  if (saved) {
+    try {
+      const draft = JSON.parse(saved)
+      if (draft.form) setForm(draft.form)
+      if (draft.facilities) setFacilities(draft.facilities)
+      if (draft.coords) setCoords(draft.coords)
+    } catch {
+      // ignore corrupt draft
+    }
+  }
+}, [])
+
+// Save draft continuously so it survives minimize/reload (text fields, facilities, map pin)
+useEffect(() => {
+  sessionStorage.setItem('addRoomDraft', JSON.stringify({ form, facilities, coords }))
+}, [form, facilities, coords])
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
@@ -118,11 +138,11 @@ export default function AddRoomForm({ onSuccess }) {
       setUploadPercent(95)
 
       const { error: insertError } = await supabase.from('rooms').insert({
-        owner_id: user.id,
-        title: form.title,
-        description: form.description,
-        address: coords.address,
-        city: form.city,
+  owner_id: user.id,
+  title: form.title,
+  description: form.description,
+  address: coords.address,
+  city: coords.address ? coords.address.split(',').slice(-3, -2)[0]?.trim() || 'Unknown' : 'Unknown',
         price: parseFloat(form.price),
         total_rooms: parseInt(form.total_rooms),
         available_rooms: parseInt(form.available_rooms),
@@ -140,6 +160,7 @@ export default function AddRoomForm({ onSuccess }) {
       setUploadLabel('Done!')
 
       setTimeout(() => {
+        sessionStorage.removeItem('addRoomDraft')
         setForm({ title: '', description: '', city: '', price: '', total_rooms: 1, available_rooms: 1, room_type: '1BHK' })
         setCoords({ lat: null, lng: null, address: '' })
         setFacilities([])
@@ -202,28 +223,17 @@ export default function AddRoomForm({ onSuccess }) {
         disabled={uploading}
         className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:border-blue-400 disabled:opacity-50"
       />
-
-      <div className="grid grid-cols-2 gap-3">
-        <input
-          name="city"
-          placeholder="City"
-          value={form.city}
-          onChange={handleChange}
-          required
-          disabled={uploading}
-          className="px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:border-blue-400 disabled:opacity-50"
-        />
-        <input
-          name="price"
-          type="number"
-          placeholder="Price per month (₹)"
-          value={form.price}
-          onChange={handleChange}
-          required
-          disabled={uploading}
-          className="px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:border-blue-400 disabled:opacity-50"
-        />
-      </div>
+  <input
+  name="price"
+  type="number"
+  placeholder="Price per month (₹)"
+  value={form.price}
+  onChange={handleChange}
+  required
+  disabled={uploading}
+  className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:border-blue-400 disabled:opacity-50"
+/>
+      
 
       <Suspense fallback={<div className="bg-white/5 rounded-xl h-[250px] flex items-center justify-center text-white/30 text-sm">Loading map...</div>}>
         <MapPicker

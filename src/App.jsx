@@ -5,6 +5,7 @@ import BrowseRooms from './pages/BrowseRooms'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import Dashboard from './pages/Dashboard'
+import AuthCallback from './pages/AuthCallback'
 import StudentDashboard from './pages/student/StudentDashboard'
 import OwnerDashboard from './pages/owner/OwnerDashboard'
 import ChatPage from './pages/ChatPage'
@@ -19,6 +20,7 @@ function App() {
             <Route path="/" element={<BrowseRooms />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
 
             <Route
               path="/dashboard"

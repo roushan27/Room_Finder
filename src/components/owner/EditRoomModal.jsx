@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../../lib/supabaseClient'
+import { useModalBackButton } from '../../hooks/useModalBackButton'
 
 const FACILITY_OPTIONS = [
   'WiFi', 'AC', 'Food/Mess', 'Laundry', 'Parking',
@@ -9,6 +10,7 @@ const FACILITY_OPTIONS = [
 const ROOM_TYPES = ['1BHK', '2BHK', 'Independent']
 
 export default function EditRoomModal({ room, onClose, onUpdated }) {
+  useModalBackButton(true, onClose)
   const [form, setForm] = useState({
     title: room.title,
     description: room.description || '',

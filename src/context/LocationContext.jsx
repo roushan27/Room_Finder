@@ -2,8 +2,15 @@ import { createContext, useContext, useState, useEffect } from 'react'
 
 const LocationContext = createContext()
 
+// Fixed reference point — change these coordinates/name to your actual university location
+const FIXED_LOCATION = {
+  lat: 23.347778,
+  lng: 85.417513,
+  label: 'Sarala Birla University',
+}
+
 export function LocationProvider({ children }) {
-  const [referenceLocation, setReferenceLocation] = useState(null) // { lat, lng, label }
+  const [referenceLocation, setReferenceLocation] = useState(FIXED_LOCATION)
 
   useEffect(() => {
     const saved = localStorage.getItem('referenceLocation')
@@ -19,6 +26,10 @@ export function LocationProvider({ children }) {
   const updateReferenceLocation = (loc) => {
     setReferenceLocation(loc)
     localStorage.setItem('referenceLocation', JSON.stringify(loc))
+  }
+
+ const useFixedLocation = () => {
+    updateReferenceLocation(FIXED_LOCATION)
   }
 
   const useMyLocation = () => {
@@ -39,7 +50,7 @@ export function LocationProvider({ children }) {
 
   return (
     <LocationContext.Provider
-      value={{ referenceLocation, updateReferenceLocation, useMyLocation }}
+      value={{ referenceLocation, updateReferenceLocation, useMyLocation, useFixedLocation }}
     >
       {children}
     </LocationContext.Provider>

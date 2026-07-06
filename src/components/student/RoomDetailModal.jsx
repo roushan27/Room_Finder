@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import RatingForm from './RatingForm'
-
+import { useModalBackButton } from '../../hooks/useModalBackButton'
 const RoomMapView = lazy(() => import('./RoomMapView'))
 
 export default function RoomDetailModal({ room, onClose, guestMode = false }) {
   const { user } = useAuth()
   const navigate = useNavigate()
+  useModalBackButton(true, onClose)
   const [activeIdx, setActiveIdx] = useState(0)
   const [playingVideo, setPlayingVideo] = useState(false)
   const [booking, setBooking] = useState(false)

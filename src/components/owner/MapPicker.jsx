@@ -12,9 +12,7 @@ L.Icon.Default.mergeOptions({
 
 async function reverseGeocode(lat, lng) {
   try {
-    const res = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
-    )
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
     const data = await res.json()
     return data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`
   } catch {
@@ -25,9 +23,7 @@ async function reverseGeocode(lat, lng) {
 function FlyToLocation({ position }) {
   const map = useMap()
   useEffect(() => {
-    if (position) {
-      map.flyTo(position, 15, { duration: 0.8 })
-    }
+    if (position) map.flyTo(position, 15, { duration: 0.8 })
   }, [position, map])
   return null
 }
@@ -45,6 +41,8 @@ export default function MapPicker({ latitude, longitude, onChange }) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState([])
   const [searching, setSearching] = useState(false)
+  const [locating, setLocating] = useState(false)
+  const [locationError, setLocationError] = useState('')
   const [resolvedAddress, setResolvedAddress] = useState('')
   const [position, setPosition] = useState(
     latitude && longitude ? [latitude, longitude] : [20.5937, 78.9629]
@@ -58,13 +56,43 @@ export default function MapPicker({ latitude, longitude, onChange }) {
     onChange(lat, lng, address)
   }
 
+  // Asks for browser location permission and places the pin at the current GPS position
+  const handleUseCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationError('Geolocation not supported on this device')
+      return
+    }
+    setLocating(true)
+    setLocationError('')
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const lat = pos.coords.latitude
+        const lng = pos.coords.longitude
+        setPosition([lat, lng])
+        setResolvedAddress('Locating address...')
+        const address = await reverseGeocode(lat, lng)
+        setResolvedAddress(address)
+        onChange(lat, lng, address)
+        setLocating(false)
+      },
+      (err) => {
+        setLocationError(
+          err.code === 1
+            ? 'Location permission denied. Please allow location access.'
+            : 'Could not get your location. Try searching instead.'
+        )
+        setLocating(false)
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    )
+  }
+
   const runSearch = async () => {
     if (!query.trim()) return
     setSearching(true)
     try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`
-      )
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`)
       const data = await res.json()
       setResults(data)
     } catch {
@@ -73,9 +101,6 @@ export default function MapPicker({ latitude, longitude, onChange }) {
     setSearching(false)
   }
 
-  // No <form> here — this is a plain button click + Enter-key handler,
-  // since this component lives INSIDE the parent AddRoomForm's <form>,
-  // and HTML does not allow nested <form> elements.
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault()
@@ -97,58 +122,37 @@ export default function MapPicker({ latitude, longitude, onChange }) {
     <div>
       <label className="text-white/60 text-sm mb-2 block">Room Location on Map</label>
 
-      <div className="flex gap-2 mb-2">
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Search address to place pin..."
-          className="flex-1 px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/40 text-sm focus:outline-none focus:border-blue-400"
-        />
-        <button
-          type="button"
-          onClick={runSearch}
-          disabled={searching}
-          className="px-3 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-sm transition disabled:opacity-50"
-        >
-          {searching ? '...' : 'Find'}
-        </button>
-      </div>
+     
 
-      {results.length > 0 && (
-        <div className="mb-2 bg-slate-800 border border-white/20 rounded-lg overflow-hidden">
-          {results.map((r, i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => selectResult(r)}
-              className="w-full text-left px-3 py-2 text-white/80 text-xs hover:bg-white/10 transition border-b border-white/5 last:border-0"
-            >
-              {r.display_name}
-            </button>
-          ))}
-        </div>
+      {/* New: Use current location button */}
+      <button
+        type="button"
+        onClick={handleUseCurrentLocation}
+        disabled={locating}
+        className="w-full mb-2 px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm hover:bg-white/20 transition disabled:opacity-50 flex items-center justify-center gap-2"
+      >
+        <span>📍</span> {locating ? 'Getting your location...' : 'Use my current location'}
+      </button>
+
+      {locationError && (
+        <p className="text-red-400 text-xs mb-2">{locationError}</p>
       )}
+
+      
 
       <div className="rounded-xl overflow-hidden border border-white/20" style={{ height: '250px' }}>
         <MapContainer center={position} zoom={13} style={{ height: '100%', width: '100%' }}>
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution="&copy; OpenStreetMap contributors"
-          />
+          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap contributors" />
           <Marker position={position} />
           <ClickHandler onPick={handlePick} />
           <FlyToLocation position={position} />
         </MapContainer>
       </div>
 
-      <p className="text-white/40 text-xs mt-1">Tap on the map to place the exact pin location</p>
+      <p className="text-white/40 text-xs mt-1">Tap on the map or use current location to place the exact pin</p>
 
       {resolvedAddress && (
-        <p className="text-blue-300 text-xs mt-2 bg-blue-500/10 px-3 py-2 rounded-lg">
-          📍 {resolvedAddress}
-        </p>
+        <p className="text-blue-300 text-xs mt-2 bg-blue-500/10 px-3 py-2 rounded-lg">📍 {resolvedAddress}</p>
       )}
     </div>
   )

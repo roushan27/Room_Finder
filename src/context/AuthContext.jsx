@@ -22,9 +22,6 @@ export function AuthProvider({ children }) {
     })
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      // Important: set loading true BEFORE fetching the profile, otherwise
-      // Dashboard/ProtectedRoute read a stale (null) profile with loading=false
-      // right after login and redirect incorrectly on the first attempt.
       setLoading(true)
       setUser(session?.user ?? null)
       if (session?.user) {
@@ -44,29 +41,50 @@ export function AuthProvider({ children }) {
       .select('*')
       .eq('id', userId)
 
-    if (error) {
-      setProfile(null)
-    } else if (!data || data.length === 0) {
-      setProfile(null)
-    } else {
-      setProfile(data[0])
-    }
+    if (error) setProfile(null)
+    else if (!data || data.length === 0) setProfile(null)
+    else setProfile(data[0])
     setLoading(false)
   }
 
-  const signUp = async (email, password, fullName, role) => {
+  const signUp = async (email, password, fullName, role, phoneNumber) => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { full_name: fullName, role: role },
+        data: { full_name: fullName, role: role, phone_number: phoneNumber || null },
       },
     })
     return { data, error }
   }
 
-  const signIn = async (email, password) => {
+  // Accepts either an email or a phone number in `identifier`.
+  // If it looks like a phone number, we first resolve it to the matching email
+  // via a safe RPC function, then sign in normally with email+password (no OTP involved).
+  const signIn = async (identifier, password) => {
+    const isEmail = identifier.includes('@')
+    let email = identifier
+
+    if (!isEmail) {
+      const { data: resolvedEmail, error: lookupError } = await supabase.rpc('get_email_by_phone', {
+        phone: identifier.trim(),
+      })
+
+      if (lookupError || !resolvedEmail) {
+        return { data: null, error: { message: 'No account found with this phone number' } }
+      }
+      email = resolvedEmail
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    return { data, error }
+  }
+
+  const signInWithGoogle = async () => {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    })
     return { data, error }
   }
 
@@ -75,7 +93,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, profile, loading, signUp, signIn, signInWithGoogle, signOut }}>
       {children}
     </AuthContext.Provider>
   )

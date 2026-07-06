@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import RoomCard from './RoomCard'
 import RoomDetailModal from './RoomDetailModal'
+import { useModalBackButton } from '../../hooks/useModalBackButton'
 
 const ROOM_TYPES = ['All', '1BHK', '2BHK', 'Independent']
 
-export default function RoomList({ guestMode = false }) {
+
+ export default function RoomList({ guestMode = false }) {
   const [rooms, setRooms] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -15,6 +17,8 @@ export default function RoomList({ guestMode = false }) {
   const [maxPrice, setMaxPrice] = useState(null)
   const [showFilters, setShowFilters] = useState(false)
 
+  useModalBackButton(showFilters, () => setShowFilters(false))
+ 
   useEffect(() => {
     fetchRooms()
   }, [])
