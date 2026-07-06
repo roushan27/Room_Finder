@@ -9,14 +9,18 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Check current session on load
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        supabase.auth.signOut()
+        setUser(null)
+        setLoading(false)
+        return
+      }
       setUser(session?.user ?? null)
       if (session?.user) fetchProfile(session.user.id)
       else setLoading(false)
     })
 
-    // Listen for login/logout changes
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
       if (session?.user) fetchProfile(session.user.id)
@@ -34,9 +38,14 @@ export function AuthProvider({ children }) {
       .from('profiles')
       .select('*')
       .eq('id', userId)
-      .single()
 
-    if (!error) setProfile(data)
+    if (error) {
+      setProfile(null)
+    } else if (!data || data.length === 0) {
+      setProfile(null)
+    } else {
+      setProfile(data[0])
+    }
     setLoading(false)
   }
 
@@ -45,7 +54,7 @@ export function AuthProvider({ children }) {
       email,
       password,
       options: {
-        data: { full_name: fullName, role: role }, // used by our SQL trigger
+        data: { full_name: fullName, role: role },
       },
     })
     return { data, error }

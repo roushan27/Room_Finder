@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import RoomCard from './RoomCard'
 import RoomDetailModal from './RoomDetailModal'
+import LocationSearchBar from '../common/LocationSearchBar'
 
 const ROOM_TYPES = ['All', '1BHK', '2BHK', 'Independent']
 
@@ -48,6 +49,8 @@ export default function RoomList({ guestMode = false }) {
 
   return (
     <div>
+      <LocationSearchBar />
+
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
         <div className="relative flex-1">
           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/50 pointer-events-none text-lg z-10">
@@ -66,7 +69,7 @@ export default function RoomList({ guestMode = false }) {
           onClick={() => setShowFilters(!showFilters)}
           className={`relative flex items-center justify-center gap-2 px-5 py-3.5 rounded-2xl border backdrop-blur-xl transition shadow-lg font-medium ${
             showFilters
-              ? 'bg-blue-500 border-blue-400 text-white'
+              ? 'bg-blue-500 border-blue-400 text-white shadow-blue-500/40'
               : 'bg-white/10 border-white/20 text-white hover:bg-white/15'
           }`}
         >
@@ -149,7 +152,7 @@ export default function RoomList({ guestMode = false }) {
           Koi room nahi mila is filter ke saath.
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
           {filteredRooms.map((room) => (
             <RoomCard key={room.id} room={room} onClick={setSelectedRoom} />
           ))}

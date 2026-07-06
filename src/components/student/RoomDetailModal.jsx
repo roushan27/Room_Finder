@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import RatingForm from './RatingForm'
+import RoomMapView from './RoomMapView'
 
 export default function RoomDetailModal({ room, onClose, guestMode = false }) {
   const { user } = useAuth()
@@ -12,9 +13,7 @@ export default function RoomDetailModal({ room, onClose, guestMode = false }) {
   const [bookingMsg, setBookingMsg] = useState('')
   const [showLoginPrompt, setShowLoginPrompt] = useState(false)
 
-  const requireLogin = () => {
-    setShowLoginPrompt(true)
-  }
+  const requireLogin = () => setShowLoginPrompt(true)
 
   const handleBook = async () => {
     if (guestMode || !user) {
@@ -94,7 +93,7 @@ export default function RoomDetailModal({ room, onClose, guestMode = false }) {
             )}
           </div>
 
-          <p className="text-white/60 mb-1 text-sm sm:text-base">📍 {room.address}, {room.city}</p>
+          <p className="text-white/50 mb-3 text-sm">{room.city}</p>
           <p className="text-blue-300 text-lg sm:text-xl font-semibold mb-4">₹{room.price}/month</p>
 
           {room.description && (
@@ -104,6 +103,11 @@ export default function RoomDetailModal({ room, onClose, guestMode = false }) {
           <p className="text-white/50 mb-4 text-sm sm:text-base">
             {room.available_rooms} of {room.total_rooms} rooms available
           </p>
+
+          <div className="mb-4">
+            <h4 className="text-white/60 text-sm mb-2">Location</h4>
+            <RoomMapView room={room} />
+          </div>
 
           {room.facilities?.length > 0 && (
             <div className="mb-4">

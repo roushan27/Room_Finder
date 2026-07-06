@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
+import MapPicker from './MapPicker'
 
 const FACILITY_OPTIONS = [
   'WiFi', 'AC', 'Food/Mess', 'Laundry', 'Parking',
@@ -21,10 +22,13 @@ export default function AddRoomForm({ onSuccess }) {
     available_rooms: 1,
     room_type: '1BHK',
   })
+  const [coords, setCoords] = useState({ lat: null, lng: null })
   const [facilities, setFacilities] = useState([])
   const [photos, setPhotos] = useState([])
   const [videos, setVideos] = useState([])
   const [uploading, setUploading] = useState(false)
+  const [uploadPercent, setUploadPercent] = useState(0)
+  const [uploadLabel, setUploadLabel] = useState('')
   const [error, setError] = useState('')
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
@@ -35,27 +39,65 @@ export default function AddRoomForm({ onSuccess }) {
     )
   }
 
-  const uploadFiles = async (files, bucket) => {
+  const uploadFilesWithProgress = async (files, bucket, startPercent, endPercent, label) => {
     const urls = []
-    for (const file of files) {
+    const range = endPercent - startPercent
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]
       const fileExt = file.name.split('.').pop()
-      const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`
-      const { error: uploadError } = await supabase.storage.from(bucket).upload(fileName, file)
-      if (uploadError) throw uploadError
-      const { data } = supabase.storage.from(bucket).getPublicUrl(fileName)
+      const uniqueName = `${user.id}/${Date.now()}-${i}-${Math.random().toString(36).slice(2, 8)}.${fileExt}`
+
+      setUploadLabel(`${label} ${i + 1} of ${files.length}...`)
+
+      const { error: uploadError } = await supabase.storage
+        .from(bucket)
+        .upload(uniqueName, file, { cacheControl: '3600', upsert: false })
+
+      if (uploadError) {
+        throw new Error(`"${file.name}" upload failed: ${uploadError.message}`)
+      }
+
+      const { data } = supabase.storage.from(bucket).getPublicUrl(uniqueName)
       urls.push(data.publicUrl)
+
+      const currentPercent = startPercent + Math.round(((i + 1) / files.length) * range)
+      setUploadPercent(currentPercent)
     }
+
     return urls
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
+
+    if (!coords.lat || !coords.lng) {
+      setError('Please select the room location on the map')
+      return
+    }
+
     setUploading(true)
+    setUploadPercent(0)
 
     try {
-      const photoUrls = photos.length ? await uploadFiles(photos, 'room-photos') : []
-      const videoUrls = videos.length ? await uploadFiles(videos, 'room-videos') : []
+      let photoUrls = []
+      let videoUrls = []
+
+      const hasPhotos = photos.length > 0
+      const hasVideos = videos.length > 0
+
+      if (hasPhotos) {
+        const endPoint = hasVideos ? 70 : 90
+        photoUrls = await uploadFilesWithProgress(photos, 'room-photos', 5, endPoint, 'Uploading photo')
+      }
+
+      if (hasVideos) {
+        videoUrls = await uploadFilesWithProgress(videos, 'room-videos', hasPhotos ? 70 : 5, 90, 'Uploading video')
+      }
+
+      setUploadLabel('Saving room details...')
+      setUploadPercent(95)
 
       const { error: insertError } = await supabase.from('rooms').insert({
         owner_id: user.id,
@@ -70,30 +112,39 @@ export default function AddRoomForm({ onSuccess }) {
         facilities,
         photos: photoUrls,
         videos: videoUrls,
+        latitude: coords.lat,
+        longitude: coords.lng,
       })
 
       if (insertError) throw insertError
 
-      setForm({
-        title: '', description: '', address: '', city: '',
-        price: '', total_rooms: 1, available_rooms: 1, room_type: '1BHK',
-      })
-      setFacilities([])
-      setPhotos([])
-      setVideos([])
+      setUploadPercent(100)
+      setUploadLabel('Done!')
 
-      if (onSuccess) onSuccess()
+      setTimeout(() => {
+        setForm({
+          title: '', description: '', address: '', city: '',
+          price: '', total_rooms: 1, available_rooms: 1, room_type: '1BHK',
+        })
+        setCoords({ lat: null, lng: null })
+        setFacilities([])
+        setPhotos([])
+        setVideos([])
+        setUploading(false)
+        setUploadPercent(0)
+        setUploadLabel('')
+        if (onSuccess) onSuccess()
+      }, 500)
     } catch (err) {
       setError(err.message)
-    } finally {
       setUploading(false)
+      setUploadPercent(0)
+      setUploadLabel('')
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 space-y-4">
-      <h2 className="text-xl font-bold text-white mb-2">Add New Room</h2>
-
+    <form onSubmit={handleSubmit} className="space-y-4">
       {error && <p className="text-red-400 text-sm bg-red-500/10 p-2 rounded-lg">{error}</p>}
 
       <input
@@ -102,7 +153,8 @@ export default function AddRoomForm({ onSuccess }) {
         value={form.title}
         onChange={handleChange}
         required
-        className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:border-blue-400"
+        disabled={uploading}
+        className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:border-blue-400 disabled:opacity-50"
       />
 
       <div>
@@ -112,10 +164,11 @@ export default function AddRoomForm({ onSuccess }) {
             <button
               type="button"
               key={type}
+              disabled={uploading}
               onClick={() => setForm({ ...form, room_type: type })}
-              className={`px-4 py-2 rounded-lg text-sm border transition ${
+              className={`px-4 py-2 rounded-lg text-sm border transition disabled:opacity-50 ${
                 form.room_type === type
-                  ? 'bg-blue-500 border-blue-400 text-white'
+                  ? 'bg-blue-500 border-blue-400 text-white shadow-lg shadow-blue-500/40'
                   : 'bg-white/10 border-white/20 text-white/60'
               }`}
             >
@@ -131,16 +184,18 @@ export default function AddRoomForm({ onSuccess }) {
         value={form.description}
         onChange={handleChange}
         rows={3}
-        className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:border-blue-400"
+        disabled={uploading}
+        className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:border-blue-400 disabled:opacity-50"
       />
 
       <input
         name="address"
-        placeholder="Full Address"
+        placeholder="Locality / Area name (e.g. Boring Road)"
         value={form.address}
         onChange={handleChange}
         required
-        className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:border-blue-400"
+        disabled={uploading}
+        className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:border-blue-400 disabled:opacity-50"
       />
 
       <div className="grid grid-cols-2 gap-3">
@@ -150,7 +205,8 @@ export default function AddRoomForm({ onSuccess }) {
           value={form.city}
           onChange={handleChange}
           required
-          className="px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:border-blue-400"
+          disabled={uploading}
+          className="px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:border-blue-400 disabled:opacity-50"
         />
         <input
           name="price"
@@ -159,9 +215,16 @@ export default function AddRoomForm({ onSuccess }) {
           value={form.price}
           onChange={handleChange}
           required
-          className="px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:border-blue-400"
+          disabled={uploading}
+          className="px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:border-blue-400 disabled:opacity-50"
         />
       </div>
+
+      <MapPicker
+        latitude={coords.lat}
+        longitude={coords.lng}
+        onChange={(lat, lng) => setCoords({ lat, lng })}
+      />
 
       <div className="grid grid-cols-2 gap-3">
         <div>
@@ -172,7 +235,8 @@ export default function AddRoomForm({ onSuccess }) {
             min={1}
             value={form.total_rooms}
             onChange={handleChange}
-            className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:border-blue-400"
+            disabled={uploading}
+            className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:border-blue-400 disabled:opacity-50"
           />
         </div>
         <div>
@@ -183,7 +247,8 @@ export default function AddRoomForm({ onSuccess }) {
             min={0}
             value={form.available_rooms}
             onChange={handleChange}
-            className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:border-blue-400"
+            disabled={uploading}
+            className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:border-blue-400 disabled:opacity-50"
           />
         </div>
       </div>
@@ -195,10 +260,11 @@ export default function AddRoomForm({ onSuccess }) {
             <button
               type="button"
               key={facility}
+              disabled={uploading}
               onClick={() => toggleFacility(facility)}
-              className={`px-3 py-1.5 rounded-lg text-sm border transition ${
+              className={`px-3 py-1.5 rounded-lg text-sm border transition disabled:opacity-50 ${
                 facilities.includes(facility)
-                  ? 'bg-blue-500 border-blue-400 text-white'
+                  ? 'bg-blue-500 border-blue-400 text-white shadow-md shadow-blue-500/30'
                   : 'bg-white/10 border-white/20 text-white/60'
               }`}
             >
@@ -209,35 +275,96 @@ export default function AddRoomForm({ onSuccess }) {
       </div>
 
       <div>
-        <label className="text-white/60 text-sm mb-1 block">Photos</label>
+        <label className="text-white/60 text-sm mb-1 block">
+          Photos {photos.length > 0 && `(${photos.length} selected)`}
+        </label>
         <input
           type="file"
           accept="image/*"
           multiple
-          onChange={(e) => setPhotos(Array.from(e.target.files))}
-          className="w-full text-white/60 text-sm file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-500 file:text-white"
+          disabled={uploading}
+          onChange={(e) => {
+            const newFiles = Array.from(e.target.files)
+            setPhotos((prev) => [...prev, ...newFiles])
+          }}
+          className="w-full text-white/60 text-sm file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-500 file:text-white disabled:opacity-50"
         />
-        {photos.length > 0 && <p className="text-white/40 text-xs mt-1">{photos.length} photo(s) selected</p>}
+        {photos.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-2">
+            {photos.map((file, i) => (
+              <span key={i} className="text-white/40 text-xs bg-white/5 px-2 py-1 rounded flex items-center gap-1">
+                {file.name.length > 15 ? file.name.slice(0, 15) + '...' : file.name}
+                {!uploading && (
+                  <button
+                    type="button"
+                    onClick={() => setPhotos((prev) => prev.filter((_, idx) => idx !== i))}
+                    className="text-red-400 hover:text-red-300"
+                  >
+                    ✕
+                  </button>
+                )}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       <div>
-        <label className="text-white/60 text-sm mb-1 block">Videos (optional)</label>
+        <label className="text-white/60 text-sm mb-1 block">
+          Videos (optional) {videos.length > 0 && `(${videos.length} selected)`}
+        </label>
         <input
           type="file"
           accept="video/*"
           multiple
-          onChange={(e) => setVideos(Array.from(e.target.files))}
-          className="w-full text-white/60 text-sm file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-500 file:text-white"
+          disabled={uploading}
+          onChange={(e) => {
+            const newFiles = Array.from(e.target.files)
+            setVideos((prev) => [...prev, ...newFiles])
+          }}
+          className="w-full text-white/60 text-sm file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-500 file:text-white disabled:opacity-50"
         />
-        {videos.length > 0 && <p className="text-white/40 text-xs mt-1">{videos.length} video(s) selected</p>}
+        {videos.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-2">
+            {videos.map((file, i) => (
+              <span key={i} className="text-white/40 text-xs bg-white/5 px-2 py-1 rounded flex items-center gap-1">
+                {file.name.length > 15 ? file.name.slice(0, 15) + '...' : file.name}
+                {!uploading && (
+                  <button
+                    type="button"
+                    onClick={() => setVideos((prev) => prev.filter((_, idx) => idx !== i))}
+                    className="text-red-400 hover:text-red-300"
+                  >
+                    ✕
+                  </button>
+                )}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
+
+      {uploading && (
+        <div className="space-y-2">
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-blue-300">{uploadLabel}</span>
+            <span className="text-blue-300 font-semibold">{uploadPercent}%</span>
+          </div>
+          <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-blue-500 to-blue-400 rounded-full transition-all duration-300 shadow-lg shadow-blue-500/50"
+              style={{ width: `${uploadPercent}%` }}
+            />
+          </div>
+        </div>
+      )}
 
       <button
         type="submit"
         disabled={uploading}
-        className="w-full py-3 rounded-xl bg-blue-500 hover:bg-blue-600 transition text-white font-semibold disabled:opacity-50"
+        className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 transition text-white font-semibold disabled:opacity-50 shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50"
       >
-        {uploading ? 'Uploading...' : 'Add Room'}
+        {uploading ? `${uploadPercent}% Uploading...` : 'Add Room'}
       </button>
     </form>
   )

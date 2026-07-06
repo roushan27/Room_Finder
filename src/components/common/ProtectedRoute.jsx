@@ -16,7 +16,6 @@ export default function ProtectedRoute({ children, allowedRole }) {
     return <Navigate to="/login" replace />
   }
 
-  // Agar role specify kiya hai aur match nahi karta, to redirect kar do
   if (allowedRole && profile?.role !== allowedRole) {
     return <Navigate to="/" replace />
   }
