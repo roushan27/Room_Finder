@@ -81,13 +81,20 @@ export default function RoomDetailModal({ room, onClose, guestMode = false }) {
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 sm:p-4">
       <div className="bg-slate-900/95 border border-white/20 rounded-t-2xl sm:rounded-2xl w-full max-w-2xl max-h-[92vh] sm:max-h-[90vh] overflow-y-auto">
         <div
-          className="relative h-56 sm:h-64 bg-black flex items-center justify-center"
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
-        >
+  className="relative h-56 sm:h-64 bg-black flex items-center justify-center overflow-hidden"
+  onTouchStart={handleTouchStart}
+  onTouchEnd={handleTouchEnd}
+  style={{ scrollBehavior: 'smooth' }}
+>
           {mediaCount > 0 ? (
             activeMedia.type === 'photo' ? (
-              <img src={activeMedia.url} alt={room.title} className="w-full h-full object-cover select-none" draggable={false} />
+              <img
+  key={activeIdx}
+  src={activeMedia.url}
+  alt={room.title}
+  className="w-full h-full object-cover select-none transition-opacity duration-300 animate-[fadeIn_0.3s_ease-in-out]"
+  draggable={false}
+/>
             ) : playingVideo ? (
               <video src={activeMedia.url} controls autoPlay className="w-full h-full object-contain bg-black" />
             ) : (
@@ -125,7 +132,7 @@ export default function RoomDetailModal({ room, onClose, guestMode = false }) {
         </div>
 
         {mediaCount > 1 && (
-          <div className="flex gap-2 overflow-x-auto p-3 bg-black/20">
+          <div className="flex gap-2 overflow-x-auto p-3 bg-black/20 scroll-smooth" style={{ scrollBehavior: 'smooth', WebkitOverflowScrolling: 'touch' }}>
             {mediaItems.map((item, i) => (
               <button
                 key={i}
