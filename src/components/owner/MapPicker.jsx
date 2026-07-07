@@ -38,9 +38,6 @@ function ClickHandler({ onPick }) {
 }
 
 export default function MapPicker({ latitude, longitude, onChange }) {
-  const [query, setQuery] = useState('')
-  const [results, setResults] = useState([])
-  const [searching, setSearching] = useState(false)
   const [locating, setLocating] = useState(false)
   const [locationError, setLocationError] = useState('')
   const [resolvedAddress, setResolvedAddress] = useState('')
@@ -88,35 +85,9 @@ export default function MapPicker({ latitude, longitude, onChange }) {
     )
   }
 
-  const runSearch = async () => {
-    if (!query.trim()) return
-    setSearching(true)
-    try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`)
-      const data = await res.json()
-      setResults(data)
-    } catch {
-      setResults([])
-    }
-    setSearching(false)
-  }
+  
 
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      runSearch()
-    }
-  }
-
-  const selectResult = async (r) => {
-    const lat = parseFloat(r.lat)
-    const lng = parseFloat(r.lon)
-    setPosition([lat, lng])
-    setResolvedAddress(r.display_name)
-    onChange(lat, lng, r.display_name)
-    setResults([])
-    setQuery('')
-  }
+  
 
   return (
     <div>
