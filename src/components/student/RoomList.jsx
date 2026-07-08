@@ -103,7 +103,7 @@ export default function RoomList({ guestMode = false }) {
 
   return (
     <div>
-      <div className="mb-4 flex justify-end items-center gap-2">
+      <div className="mb-4 flex justify-between items-center gap-2">
   <button
     onClick={openFilters}
     className="relative flex-shrink-0 flex items-center justify-center w-11 h-11 rounded-xl bg-white/10 backdrop-blur-xl border border-white/20 text-white hover:bg-white/15 transition shadow-lg"
@@ -119,7 +119,7 @@ export default function RoomList({ guestMode = false }) {
     )}
   </button>
 
-  <div className="flex justify-end items-center gap-2">
+  <div className="flex justify-between items-center gap-2">
     <div className="relative w-40 sm:w-56">
       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none text-sm z-10">🔍</span>
       <input

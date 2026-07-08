@@ -70,7 +70,7 @@ export default function RoomCard({ room, onClick }) {
       <div className="p-4 relative">
         <div className="flex justify-between items-start gap-2">
           <h3 className="text-white font-semibold text-lg truncate">{room.title}</h3>
-          <span className="text-white/30 text-[10px] whitespace-nowrap mt-1">{getTimeAgo()}</span>
+          <span className="text-blue-300 text-[10px] font-semibold whitespace-nowrap mt-1 bg-blue-500/10 px-2 py-0.5 rounded-full">{getTimeAgo()}</span>
         </div>
 
         {locality && (

@@ -34,27 +34,35 @@ function FlyTo({ position, trigger }) {
 export default function RoomMapView({ room }) {
   const [liveLocation, setLiveLocation] = useState(null)
   const [locationError, setLocationError] = useState('')
+  const [locating, setLocating] = useState(false)
   const [flyTrigger, setFlyTrigger] = useState(0)
 
-  // Automatically asks for browser location permission as soon as the map opens
-  useEffect(() => {
-    if (!navigator.geolocation) return
+  // Requires an explicit tap to work reliably on mobile browsers —
+  // silent/automatic geolocation calls are often blocked on phones until the user interacts.
+  const requestLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationError('Geolocation not supported on this device')
+      return
+    }
+    setLocating(true)
+    setLocationError('')
 
-    const watchId = navigator.geolocation.watchPosition(
+    navigator.geolocation.getCurrentPosition(
       (pos) => {
         setLiveLocation([pos.coords.latitude, pos.coords.longitude])
         setLocationError('')
+        setLocating(false)
+        setFlyTrigger((prev) => prev + 1)
       },
       (err) => {
         setLocationError(
           err.code === 1 ? 'Location permission denied' : 'Unable to get your location'
         )
+        setLocating(false)
       },
-      { enableHighAccuracy: true, maximumAge: 5000 }
+      { enableHighAccuracy: true, timeout: 10000 }
     )
-
-    return () => navigator.geolocation.clearWatch(watchId)
-  }, [])
+  }
 
   if (!room.latitude || !room.longitude) {
     return (
@@ -89,24 +97,23 @@ export default function RoomMapView({ room }) {
         </MapContainer>
       </div>
 
-      <div className="flex justify-between items-center">
-        {distance !== null ? (
-          <p className="text-blue-300 text-sm font-medium">📏 {formatDistance(distance)} from your location</p>
-        ) : locationError ? (
-          <p className="text-red-400 text-xs">{locationError}</p>
-        ) : (
-          <p className="text-white/30 text-xs">Detecting your location...</p>
-        )}
+     <div className="flex justify-between items-center">
+  {distance !== null ? (
+    <p className="text-blue-300 text-sm font-medium">📏 {formatDistance(distance)} from your location</p>
+  ) : locationError ? (
+    <p className="text-red-400 text-xs">{locationError}</p>
+  ) : (
+    <p className="text-white/30 text-xs">Tap to see distance</p>
+  )}
 
-        {liveLocation && (
-          <button
-            onClick={() => setFlyTrigger((prev) => prev + 1)}
-            className="text-blue-300 text-xs hover:text-blue-200 transition"
-          >
-            📍 Center on me
-          </button>
-        )}
-      </div>
+  <button
+    onClick={requestLocation}
+    disabled={locating}
+    className="text-blue-300 text-xs hover:text-blue-200 transition flex items-center gap-1 disabled:opacity-50 flex-shrink-0"
+  >
+    📍 {locating ? 'Locating...' : 'Use current location'}
+  </button>
+</div>
     </div>
   )
 }

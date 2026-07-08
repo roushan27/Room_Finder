@@ -303,61 +303,61 @@ export default function AddRoomForm({ onSuccess }) {
 />
       
 
-      <Suspense fallback={<div className="bg-white/5 rounded-xl h-[250px] flex items-center justify-center text-white/30 text-sm">Loading map...</div>}>
-        <MapPicker
-          latitude={coords.lat}
-          longitude={coords.lng}
-          onChange={(lat, lng, address) => setCoords({ lat, lng, address })}
-        />
-      </Suspense>
+    <div>
+  <label className="text-white/60 text-sm mb-2 block">Facilities</label>
+  <div className="flex flex-wrap gap-2">
+    {FACILITY_OPTIONS.map((facility) => (
+      <button
+        type="button"
+        key={facility}
+        disabled={uploading}
+        onClick={() => toggleFacility(facility)}
+        className={`px-3 py-1.5 rounded-lg text-sm border transition disabled:opacity-50 ${
+          facilities.includes(facility)
+            ? 'bg-blue-500 border-blue-400 text-white shadow-md shadow-blue-500/30'
+            : 'bg-white/10 border-white/20 text-white/60'
+        }`}
+      >
+        {facility}
+      </button>
+    ))}
+  </div>
+</div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="text-white/60 text-sm">Total Rooms</label>
-          <input
-            name="total_rooms"
-            type="number"
-            min={1}
-            value={form.total_rooms}
-            onChange={handleChange}
-            disabled={uploading}
-            className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:border-blue-400 disabled:opacity-50"
-          />
-        </div>
-        <div>
-          <label className="text-white/60 text-sm">Available Rooms</label>
-          <input
-            name="available_rooms"
-            type="number"
-            min={0}
-            value={form.available_rooms}
-            onChange={handleChange}
-            disabled={uploading}
-            className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:border-blue-400 disabled:opacity-50"
-          />
-        </div>
-      </div>
+<Suspense fallback={<div className="bg-white/5 rounded-xl h-[250px] flex items-center justify-center text-white/30 text-sm">Loading map...</div>}>
+  <MapPicker
+    latitude={coords.lat}
+    longitude={coords.lng}
+    onChange={(lat, lng, address) => setCoords({ lat, lng, address })}
+  />
+</Suspense>
 
-      <div>
-        <label className="text-white/60 text-sm mb-2 block">Facilities</label>
-        <div className="flex flex-wrap gap-2">
-          {FACILITY_OPTIONS.map((facility) => (
-            <button
-              type="button"
-              key={facility}
-              disabled={uploading}
-              onClick={() => toggleFacility(facility)}
-              className={`px-3 py-1.5 rounded-lg text-sm border transition disabled:opacity-50 ${
-                facilities.includes(facility)
-                  ? 'bg-blue-500 border-blue-400 text-white shadow-md shadow-blue-500/30'
-                  : 'bg-white/10 border-white/20 text-white/60'
-              }`}
-            >
-              {facility}
-            </button>
-          ))}
-        </div>
-      </div>
+<div className="grid grid-cols-2 gap-3">
+  <div>
+    <label className="text-white/60 text-sm">Total Rooms</label>
+    <input
+      name="total_rooms"
+      type="number"
+      min={1}
+      value={form.total_rooms}
+      onChange={handleChange}
+      disabled={uploading}
+      className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:border-blue-400 disabled:opacity-50"
+    />
+  </div>
+  <div>
+    <label className="text-white/60 text-sm">Available Rooms</label>
+    <input
+      name="available_rooms"
+      type="number"
+      min={0}
+      value={form.available_rooms}
+      onChange={handleChange}
+      disabled={uploading}
+      className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:border-blue-400 disabled:opacity-50"
+    />
+  </div>
+</div>
 
       <div>
         <label className="text-white/60 text-sm mb-1 block">
