@@ -72,7 +72,7 @@ export default function BookingRequests({ refreshTrigger, onUpdated }) {
 
       {bookings.length === 0 ? (
         <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 text-white/60 text-center">
-          Koi pending booking request nahi hai abhi.
+          No pending booking requests at the moment.
         </div>
       ) : (
         bookings.map((booking) => (

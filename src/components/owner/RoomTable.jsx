@@ -26,7 +26,7 @@ export default function RoomTable({ refreshTrigger, onEdit }) {
   }
 
   const handleDelete = async (roomId, roomTitle) => {
-    const confirmed = window.confirm(`"${roomTitle}" ko delete karna chahte ho? Ye action undo nahi ho sakta.`)
+    const confirmed = window.confirm(`Delete "${roomTitle}"? This action cannot be undone.`)
     if (!confirmed) return
 
     const { error } = await supabase.from('rooms').delete().eq('id', roomId)
@@ -56,7 +56,7 @@ export default function RoomTable({ refreshTrigger, onEdit }) {
   if (rooms.length === 0) {
     return (
       <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 text-white/60 text-center">
-        Abhi tak koi room add nahi kiya. "+ Add Room" button se shuru karo.
+        No rooms have been added yet. Start by clicking the "+ Add Room" button.
       </div>
     )
   }

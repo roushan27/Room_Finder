@@ -8,6 +8,7 @@ export default function Login() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
+  const [selectedRole, setSelectedRole] = useState('student')
   const { signIn, signInWithGoogle } = useAuth()
   const navigate = useNavigate()
 
@@ -16,7 +17,7 @@ export default function Login() {
     setError('')
     setLoading(true)
 
-    const { error } = await signIn(identifier, password)
+    const { error } = await signIn(identifier, password, selectedRole)
 
     if (error) {
       setError(error.message)
@@ -29,7 +30,7 @@ export default function Login() {
   const handleGoogleLogin = async () => {
     setGoogleLoading(true)
     setError('')
-    const { error } = await signInWithGoogle()
+    const { error } = await signInWithGoogle(selectedRole)
     if (error) {
       setError(error.message)
       setGoogleLoading(false)
@@ -42,9 +43,36 @@ export default function Login() {
         onSubmit={handleLogin}
         className="w-full max-w-sm bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl p-6 sm:p-8"
       >
-        <h2 className="text-lg sm:text-xl font-bold text-white mb-6 text-center">Log In</h2>
+        <h2 className="text-lg sm:text-xl font-bold text-white mb-2 text-center">Log In</h2>
+        <p className="text-center text-white/60 text-sm mb-4">Choose how you want to continue</p>
 
         {error && <p className="text-red-400 text-sm mb-4 bg-red-500/10 p-2 rounded-lg">{error}</p>}
+
+        <div className="mb-4 rounded-2xl border border-white/10 bg-slate-950/30 p-2">
+          <div className="text-[11px] uppercase tracking-[0.24em] text-white/40 mb-2 px-1">Continue as</div>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setSelectedRole('student')}
+              className={`flex-1 rounded-xl border px-3 py-2.5 text-sm font-semibold transition ${selectedRole === 'student' ? 'border-blue-400 bg-blue-500/90 text-white shadow-lg shadow-blue-500/20' : 'border-white/10 bg-white/5 text-white/70 hover:bg-white/10'}`}
+            >
+              <span className="flex items-center justify-center gap-2">
+                <span className="text-base">🎓</span>
+                <span>Student</span>
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedRole('owner')}
+              className={`flex-1 rounded-xl border px-3 py-2.5 text-sm font-semibold transition ${selectedRole === 'owner' ? 'border-purple-400 bg-purple-500/90 text-white shadow-lg shadow-purple-500/20' : 'border-white/10 bg-white/5 text-white/70 hover:bg-white/10'}`}
+            >
+              <span className="flex items-center justify-center gap-2">
+                <span className="text-base">🏠</span>
+                <span>Owner</span>
+              </span>
+            </button>
+          </div>
+        </div>
 
         <button
           type="button"

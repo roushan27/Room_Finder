@@ -9,7 +9,10 @@ const FACILITY_OPTIONS = [
   'Power Backup', 'Attached Bathroom', 'Furnished', 'Water Supply', 'CCTV'
 ]
 
-const ROOM_TYPES = ['1BHK', '2BHK', 'Independent']
+const ROOM_TYPES = ['1BHK', '2BHK', '3BHK', 'Independent']
+const CATEGORIES = ['PG', 'Hostel', 'Flat', 'House', 'Shared Room']
+const OCCUPANCY_OPTIONS = ['Single', 'Double', 'Triple', 'Any']
+const TENANT_TYPES = ['Students', 'Working Professionals', 'Families', 'Anyone']
 
 export default function EditRoomModal({ room, onClose, onUpdated }) {
   useModalBackButton(true, onClose)
@@ -23,6 +26,11 @@ export default function EditRoomModal({ room, onClose, onUpdated }) {
     total_rooms: room.total_rooms,
     available_rooms: room.available_rooms,
     room_type: room.room_type || '1BHK',
+    category: room.category || 'PG',
+    occupancy: room.occupancy || 'Single',
+    tenant_type: room.tenant_type || 'Students',
+    website: room.website || '',
+    requirements: room.requirements || '',
   })
   const [facilities, setFacilities] = useState(room.facilities || [])
   const [selectedPhotos, setSelectedPhotos] = useState([])
@@ -105,6 +113,11 @@ export default function EditRoomModal({ room, onClose, onUpdated }) {
           total_rooms: parseInt(form.total_rooms),
           available_rooms: parseInt(form.available_rooms),
           room_type: form.room_type,
+          category: form.category,
+          occupancy: form.occupancy,
+          tenant_type: form.tenant_type,
+          website: form.website,
+          requirements: form.requirements,
           facilities,
           photos: updatedPhotos,
         })
@@ -119,18 +132,10 @@ export default function EditRoomModal({ room, onClose, onUpdated }) {
         onUpdated()
         onClose()
       }
-    } catch (err) {
+   } catch (err) {
       setError(err.message)
       setSaving(false)
       setUploadLabel('')
-    }
-
-    if (error) {
-      setError(error.message)
-      setSaving(false)
-    } else {
-      onUpdated()
-      onClose()
     }
   }
 
@@ -244,6 +249,74 @@ export default function EditRoomModal({ room, onClose, onUpdated }) {
             {room.photos?.length > 0 && !selectedPhotos.length && (
               <p className="text-xs text-white/40 mt-2">Current images will be kept unless you choose new ones.</p>
             )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label className="text-white/60 text-sm mb-1 block">Category</label>
+              <select
+                value={form.category}
+                onChange={handleChange}
+                name="category"
+                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:border-blue-400"
+              >
+                {CATEGORIES.map((category) => (
+                  <option key={category} value={category} className="text-slate-900">{category}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-white/60 text-sm mb-1 block">Occupancy</label>
+              <select
+                value={form.occupancy}
+                onChange={handleChange}
+                name="occupancy"
+                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:border-blue-400"
+              >
+                {OCCUPANCY_OPTIONS.map((option) => (
+                  <option key={option} value={option} className="text-slate-900">{option}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label className="text-white/60 text-sm mb-1 block">Preferred Tenant</label>
+              <select
+                value={form.tenant_type}
+                onChange={handleChange}
+                name="tenant_type"
+                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:border-blue-400"
+              >
+                {TENANT_TYPES.map((option) => (
+                  <option key={option} value={option} className="text-slate-900">{option}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-white/60 text-sm mb-1 block">Website / Contact Link</label>
+              <input
+                name="website"
+                type="url"
+                placeholder="https://example.com"
+                value={form.website}
+                onChange={handleChange}
+                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:border-blue-400"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-white/60 text-sm mb-1 block">Requirements</label>
+            <textarea
+              name="requirements"
+              placeholder="Mention age, gender, documents, college, or other requirements"
+              value={form.requirements}
+              onChange={handleChange}
+              rows={2}
+              className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:border-blue-400"
+            />
           </div>
 
           <div>

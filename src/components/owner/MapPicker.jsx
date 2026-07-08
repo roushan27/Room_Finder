@@ -91,18 +91,15 @@ export default function MapPicker({ latitude, longitude, onChange }) {
 
   return (
     <div>
-      <label className="text-white/60 text-sm mb-2 block">Room Location on Map</label>
+      <label className="text-white/60 text-sm mb-2 block">Room Location</label>
 
-     
-
-      {/* New: Use current location button */}
       <button
         type="button"
         onClick={handleUseCurrentLocation}
         disabled={locating}
         className="w-full mb-2 px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm hover:bg-white/20 transition disabled:opacity-50 flex items-center justify-center gap-2"
       >
-        <span>📍</span> {locating ? 'Getting your location...' : 'Use my current location'}
+        <span>📍</span> {locating ? 'Getting your location...' : 'Use Current Location'}
       </button>
 
       {locationError && (
@@ -120,7 +117,7 @@ export default function MapPicker({ latitude, longitude, onChange }) {
         </MapContainer>
       </div>
 
-      <p className="text-white/40 text-xs mt-1">Tap on the map or use current location to place the exact pin</p>
+      <p className="text-white/40 text-xs mt-1">Tap the map or use your current location to place the exact pin.</p>
 
       {resolvedAddress && (
         <p className="text-blue-300 text-xs mt-2 bg-blue-500/10 px-3 py-2 rounded-lg">📍 {resolvedAddress}</p>

@@ -7,17 +7,23 @@ const MapPicker = lazy(() => import('./MapPicker'))
 
 const FACILITY_OPTIONS = [
   'WiFi', 'AC', 'Food/Mess', 'Laundry', 'Parking',
-  'Power Backup', 'Attached Bathroom', 'Furnished', 'Water Supply', 'CCTV'
+  'Power Backup', 'Attached Bathroom', 'Furnished', 'Water Supply', 'CCTV',
+  'Study Table', 'Wardrobe', 'Private Bathroom','Housekeeping'
 ]
 
-const ROOM_TYPES = ['1BHK', '2BHK', 'Independent']
+const ROOM_TYPES = ['1BHK', '2BHK', '3BHK', 'Independent']
+const CATEGORIES = ['PG', 'Hostel', 'Flat', 'House', 'Shared Room']
+const OCCUPANCY_OPTIONS = ['Single', 'Double', 'Triple', 'Any']
+const TENANT_TYPES = ['Students', 'Working Professionals', 'Families', 'Anyone']
 
 export default function AddRoomForm({ onSuccess }) {
   const { user } = useAuth()
   const [form, setForm] = useState({
-    title: '', description: '', city: '', price: '',
-    total_rooms: 1, available_rooms: 1, room_type: '1BHK',
-  })
+  title: '', description: '', city: '', price: '',
+  total_rooms: 1, available_rooms: 1, room_type: '1BHK',
+  category: 'PG', occupancy: 'Single', tenant_type: 'Students',
+  phone_number: '',
+})
   const [coords, setCoords] = useState({ lat: null, lng: null, address: '' })
   const [facilities, setFacilities] = useState([])
   const [photos, setPhotos] = useState([])
@@ -27,25 +33,35 @@ export default function AddRoomForm({ onSuccess }) {
   const [uploadLabel, setUploadLabel] = useState('')
   const [error, setError] = useState('')
 
-  // Restore any draft saved before the tab was minimized/reloaded
-useEffect(() => {
-  const saved = sessionStorage.getItem('addRoomDraft')
-  if (saved) {
-    try {
-      const draft = JSON.parse(saved)
-      if (draft.form) setForm(draft.form)
-      if (draft.facilities) setFacilities(draft.facilities)
-      if (draft.coords) setCoords(draft.coords)
-    } catch {
-      // ignore corrupt draft
+  useEffect(() => {
+    const saved = sessionStorage.getItem('addRoomDraft')
+    if (saved) {
+      try {
+        const draft = JSON.parse(saved)
+        if (draft.form) setForm((prev) => ({ ...prev, ...draft.form }))
+        if (draft.facilities) setFacilities(draft.facilities)
+        if (draft.coords) setCoords(draft.coords)
+      } catch {
+        // ignore corrupt draft
+      }
     }
-  }
-}, [])
+  }, [])
 
-// Save draft continuously so it survives minimize/reload (text fields, facilities, map pin)
-useEffect(() => {
-  sessionStorage.setItem('addRoomDraft', JSON.stringify({ form, facilities, coords }))
-}, [form, facilities, coords])
+  useEffect(() => {
+    if (!user?.id) return
+    sessionStorage.setItem('addRoomDraft', JSON.stringify({ form, facilities, coords }))
+  }, [form, facilities, coords, user?.id])
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        sessionStorage.setItem('addRoomDraft', JSON.stringify({ form, facilities, coords }))
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [form, facilities, coords])
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
@@ -147,6 +163,10 @@ useEffect(() => {
         total_rooms: parseInt(form.total_rooms),
         available_rooms: parseInt(form.available_rooms),
         room_type: form.room_type,
+        category: form.category,
+        occupancy: form.occupancy,
+        tenant_type: form.tenant_type,
+        phone_number: form.phone_number || null,
         facilities,
         photos: photoUrls,
         videos: videoUrls,
@@ -161,7 +181,7 @@ useEffect(() => {
 
       setTimeout(() => {
         sessionStorage.removeItem('addRoomDraft')
-        setForm({ title: '', description: '', city: '', price: '', total_rooms: 1, available_rooms: 1, room_type: '1BHK' })
+        setForm({ title: '', description: '', city: '', price: '', total_rooms: 1, available_rooms: 1, room_type: '1BHK', category: 'PG', occupancy: 'Single', tenant_type: 'Students', phone_number: '' })
         setCoords({ lat: null, lng: null, address: '' })
         setFacilities([])
         setPhotos([])
@@ -185,7 +205,7 @@ useEffect(() => {
 
       <input
         name="title"
-        placeholder="Room Title (e.g. Sunrise PG for Boys)"
+        placeholder="Room title (e.g. Sunrise PG for Boys)"
         value={form.title}
         onChange={handleChange}
         required
@@ -195,7 +215,7 @@ useEffect(() => {
 
       <div>
         <label className="text-white/60 text-sm mb-2 block">Room Type</label>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {ROOM_TYPES.map((type) => (
             <button
               type="button"
@@ -213,6 +233,54 @@ useEffect(() => {
           ))}
         </div>
       </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <label className="text-white/60 text-sm mb-1 block">Category</label>
+          <select
+            value={form.category}
+            onChange={handleChange}
+            name="category"
+            disabled={uploading}
+            className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:border-blue-400 disabled:opacity-50"
+          >
+            {CATEGORIES.map((category) => (
+              <option key={category} value={category} className="text-slate-900">{category}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="text-white/60 text-sm mb-1 block">Occupancy</label>
+          <select
+            value={form.occupancy}
+            onChange={handleChange}
+            name="occupancy"
+            disabled={uploading}
+            className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:border-blue-400 disabled:opacity-50"
+          >
+            {OCCUPANCY_OPTIONS.map((option) => (
+              <option key={option} value={option} className="text-slate-900">{option}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label className="text-white/60 text-sm mb-1 block">Preferred Tenant</label>
+        <select
+          value={form.tenant_type}
+          onChange={handleChange}
+          name="tenant_type"
+          disabled={uploading}
+          className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:border-blue-400 disabled:opacity-50"
+        >
+          {TENANT_TYPES.map((option) => (
+            <option key={option} value={option} className="text-slate-900">{option}</option>
+          ))}
+        </select>
+      </div>
+
+      
 
       <textarea
         name="description"
@@ -343,6 +411,19 @@ useEffect(() => {
             ))}
           </div>
         )}
+      </div>
+
+      <div>
+        <label className="text-white/60 text-sm mb-1 block">Phone Number (optional)</label>
+        <input
+          name="phone_number"
+          type="tel"
+          placeholder="+91 9876543210"
+          value={form.phone_number}
+          onChange={handleChange}
+          disabled={uploading}
+          className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:border-blue-400 disabled:opacity-50"
+        />
       </div>
 
       {uploading && (

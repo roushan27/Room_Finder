@@ -4,6 +4,25 @@ import { supabase } from '../lib/supabaseClient'
 const AuthContext = createContext()
 const ADMIN_EMAIL = 'kumarroushan4122@gmail.com'
 const VALID_ROLES = new Set(['student', 'owner'])
+const PENDING_ROLE_STORAGE_KEY = 'pending_login_role'
+
+const getPendingRole = () => {
+  const stored = window.localStorage.getItem(PENDING_ROLE_STORAGE_KEY) || window.localStorage.getItem('pending_google_role')
+  return VALID_ROLES.has(stored) ? stored : null
+}
+
+const setPendingRole = (role) => {
+  if (role && VALID_ROLES.has(role)) {
+    window.localStorage.setItem(PENDING_ROLE_STORAGE_KEY, role)
+  } else {
+    window.localStorage.removeItem(PENDING_ROLE_STORAGE_KEY)
+  }
+}
+
+const clearPendingRole = () => {
+  window.localStorage.removeItem(PENDING_ROLE_STORAGE_KEY)
+  window.localStorage.removeItem('pending_google_role')
+}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
@@ -39,7 +58,7 @@ export function AuthProvider({ children }) {
 
   const createProfileFromUser = async (authUser, fallbackRole = 'student') => {
     const metadata = authUser.user_metadata || {}
-    const pendingRole = window.localStorage.getItem('pending_google_role')
+    const pendingRole = getPendingRole()
     const role =
       authUser.email === ADMIN_EMAIL
         ? 'admin'
@@ -70,25 +89,46 @@ export function AuthProvider({ children }) {
       console.error('Profile creation failed:', error.message)
       return null
     }
+
+    clearPendingRole()
     return data
   }
 
-  const fetchProfile = async (authUser) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', authUser.id)
+ const fetchProfile = async (authUser) => {
+  const pendingRole = getPendingRole()
 
-    if (error) {
-      setProfile(null)
-    } else if (!data || data.length === 0) {
-      const createdProfile = await createProfileFromUser(authUser)
-      setProfile(createdProfile)
-    } else {
-      setProfile(data[0])
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', authUser.id)
+
+  if (error) {
+    setProfile(null)
+  } else if (!data || data.length === 0) {
+    const createdProfile = await createProfileFromUser(authUser, pendingRole || 'student')
+    setProfile(createdProfile)
+  } else {
+    let profileRecord = data[0]
+
+    // Never let a pending student/owner selection overwrite an admin account's role
+    if (pendingRole && profileRecord.role !== pendingRole && profileRecord.role !== 'admin') {
+      const { data: updatedProfile, error: updateError } = await supabase
+        .from('profiles')
+        .update({ role: pendingRole })
+        .eq('id', authUser.id)
+        .select('*')
+        .single()
+
+      if (!updateError && updatedProfile) {
+        profileRecord = updatedProfile
+      }
     }
-    setLoading(false)
+
+    clearPendingRole()
+    setProfile(profileRecord)
   }
+  setLoading(false)
+}
 
   const signUp = async (email, password, fullName, role, phoneNumber) => {
     const { data, error } = await supabase.auth.signUp({
@@ -104,9 +144,13 @@ export function AuthProvider({ children }) {
   // Accepts either an email or a phone number in `identifier`.
   // If it looks like a phone number, we first resolve it to the matching email
   // via a safe RPC function, then sign in normally with email+password (no OTP involved).
-  const signIn = async (identifier, password) => {
+  const signIn = async (identifier, password, role = null) => {
     const isEmail = identifier.includes('@')
     let email = identifier
+
+    if (role) {
+      setPendingRole(role)
+    }
 
     if (!isEmail) {
       const { data: resolvedEmail, error: lookupError } = await supabase.rpc('get_email_by_phone', {
@@ -126,11 +170,7 @@ export function AuthProvider({ children }) {
   const signInWithGoogle = async (role) => {
     const redirectTo = import.meta.env.VITE_AUTH_REDIRECT_URL || `${window.location.origin}/auth/callback`
 
-    if (role) {
-      window.localStorage.setItem('pending_google_role', role)
-    } else {
-      window.localStorage.removeItem('pending_google_role')
-    }
+    setPendingRole(role)
 
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
