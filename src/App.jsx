@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard'
 import AuthCallback from './pages/AuthCallback'
 import StudentDashboard from './pages/student/StudentDashboard'
 import OwnerDashboard from './pages/owner/OwnerDashboard'
+import AdminDashboard from './pages/admin/AdminDashboard'
 import ChatPage from './pages/ChatPage'
 import ProtectedRoute from './components/common/ProtectedRoute'
 
@@ -48,6 +49,14 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+  path="/admin/dashboard"
+  element={
+    <ProtectedRoute allowedRole="admin">
+      <AdminDashboard />
+    </ProtectedRoute>
+  }
+/>
 
             <Route
               path="/chat/:roomId/:otherUserId"

@@ -11,6 +11,7 @@ export default function RoomDetailModal({ room, onClose, guestMode = false }) {
   const navigate = useNavigate()
   useModalBackButton(true, onClose)
   const [activeIdx, setActiveIdx] = useState(0)
+  const [loadedImages, setLoadedImages] = useState({})
   const [playingVideo, setPlayingVideo] = useState(false)
   const [booking, setBooking] = useState(false)
   const [bookingMsg, setBookingMsg] = useState('')
@@ -87,14 +88,31 @@ export default function RoomDetailModal({ room, onClose, guestMode = false }) {
   style={{ scrollBehavior: 'smooth' }}
 >
           {mediaCount > 0 ? (
-            activeMedia.type === 'photo' ? (
-              <img
-  key={activeIdx}
-  src={activeMedia.url}
-  alt={room.title}
-  className="w-full h-full object-cover select-none transition-opacity duration-300 animate-[fadeIn_0.3s_ease-in-out]"
-  draggable={false}
-/>
+           activeMedia.type === 'photo' ? (
+              <>
+                {!loadedImages[activeIdx] && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-slate-800 overflow-hidden">
+                    <div
+                      className="absolute inset-0"
+                      style={{
+                        background: 'linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.05) 75%)',
+                        backgroundSize: '200% 100%',
+                        animation: 'shimmer 1.5s infinite',
+                      }}
+                    />
+                  </div>
+                )}
+                <img
+                  key={activeIdx}
+                  src={activeMedia.url}
+                  alt={room.title}
+                  onLoad={() => setLoadedImages((prev) => ({ ...prev, [activeIdx]: true }))}
+                  className={`w-full h-full object-cover select-none transition-opacity duration-300 ${
+                    loadedImages[activeIdx] ? 'opacity-100' : 'opacity-0'
+                  }`}
+                  draggable={false}
+                />
+              </>
             ) : playingVideo ? (
               <video src={activeMedia.url} controls autoPlay className="w-full h-full object-contain bg-black" />
             ) : (
@@ -141,9 +159,17 @@ export default function RoomDetailModal({ room, onClose, guestMode = false }) {
                   i === activeIdx ? 'border-blue-400 opacity-100' : 'border-white/10 opacity-60 hover:opacity-90'
                 }`}
               >
-                {item.type === 'photo' ? (
-                  <img src={item.url} alt={`Media ${i + 1}`} loading="lazy" className="w-full h-full object-cover" />
-                ) : (
+               {item.type === 'photo' ? (
+  <img
+    src={item.url}
+    alt={`Media ${i + 1}`}
+    loading="lazy"
+    className="w-full h-full object-cover bg-slate-700"
+    style={{
+      background: 'linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.05) 75%)',
+    }}
+  />
+) : (
                   <span className="w-full h-full flex items-center justify-center bg-slate-800 text-white text-lg">▶</span>
                 )}
               </button>

@@ -22,9 +22,17 @@ export default function OwnerDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 p-4 sm:p-6">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 sm:mb-8">
-        <h1 className="text-xl sm:text-2xl font-bold text-white">
-          Owner Panel — {profile?.full_name} 🏠
-        </h1>
+      <h1
+  className="text-xl sm:text-2xl font-bold text-white px-5 py-3 rounded-2xl inline-block"
+  style={{
+    background: 'linear-gradient(145deg, rgba(255,255,255,0.15), rgba(255,255,255,0.05))',
+    backdropFilter: 'blur(16px)',
+    border: '1px solid rgba(255,255,255,0.2)',
+    boxShadow: '0 8px 32px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.1) inset, 0 4px 12px rgba(147,51,234,0.15)',
+  }}
+>
+  Owner Panel — {profile?.full_name} 🏠
+</h1>
         <div className="flex flex-wrap gap-2 sm:gap-3 items-center">
           <button
             onClick={() => setShowAddModal(true)}

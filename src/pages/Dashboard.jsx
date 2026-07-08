@@ -12,6 +12,10 @@ export default function Dashboard() {
     )
   }
 
+  if (profile?.role === 'admin') {
+    return <Navigate to="/admin/dashboard" replace />
+  }
+
   if (profile?.role === 'owner') {
     return <Navigate to="/owner/dashboard" replace />
   }
