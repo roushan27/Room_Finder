@@ -87,10 +87,17 @@ export default function ChatInbox() {
     const otherIds = [...new Set(convoList.map((c) => c.otherId))]
     const roomIds = [...new Set(convoList.map((c) => c.room_id))]
 
-    const [{ data: profiles }, { data: rooms }] = await Promise.all([
-      supabase.from('profiles').select('id, full_name').in('id', otherIds),
-      supabase.from('rooms').select('id, title').in('id', roomIds),
+    const [profilesResult, roomsResult] = await Promise.all([
+      otherIds.length > 0
+        ? supabase.from('profiles').select('id, full_name').in('id', otherIds)
+        : Promise.resolve({ data: [] }),
+      roomIds.length > 0
+        ? supabase.from('rooms').select('id, title').in('id', roomIds)
+        : Promise.resolve({ data: [] }),
     ])
+
+    const profiles = profilesResult.data || []
+    const rooms = roomsResult.data || []
 
     const enriched = convoList.map((c) => ({
       ...c,

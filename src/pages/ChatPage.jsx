@@ -71,8 +71,9 @@ export default function ChatPage() {
       .from('profiles')
       .select('full_name')
       .eq('id', otherUserId)
-      .single()
-    if (data) setOtherName(data.full_name)
+      .maybeSingle()
+
+    setOtherName(data?.full_name || 'User')
   }
 
   const fetchMessages = async () => {

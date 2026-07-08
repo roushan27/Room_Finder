@@ -103,12 +103,11 @@ export default function RoomList({ guestMode = false }) {
 
   return (
     <div>
-    <div className="relative mb-4">
-  {/* Filter button, fixed to the left edge of the screen */}
+      <div className="mb-4 flex justify-end items-center gap-2">
   <button
     onClick={openFilters}
-    className="fixed left-3 sm:left-4 z-30 flex items-center justify-center w-11 h-11 rounded-xl bg-white/10 backdrop-blur-xl border border-white/20 text-white hover:bg-white/15 transition shadow-lg"
-    style={{ top: 'var(--filter-btn-top, 140px)' }}
+    className="relative flex-shrink-0 flex items-center justify-center w-11 h-11 rounded-xl bg-white/10 backdrop-blur-xl border border-white/20 text-white hover:bg-white/15 transition shadow-lg"
+    aria-label="Open filters"
   >
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h18M6 4v3m0 0a2 2 0 100 4 2 2 0 000-4zM6 11v9M12 4v9m0 0a2 2 0 100 4 2 2 0 000-4zm0 4v3M18 4v3m0 0a2 2 0 100 4 2 2 0 000-4zm0 4v9" />

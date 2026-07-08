@@ -2,6 +2,8 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 
 const AuthContext = createContext()
+const ADMIN_EMAIL = 'kumarroushan4122@gmail.com'
+const VALID_ROLES = new Set(['student', 'owner'])
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
@@ -17,7 +19,7 @@ export function AuthProvider({ children }) {
         return
       }
       setUser(session?.user ?? null)
-      if (session?.user) fetchProfile(session.user.id)
+      if (session?.user) fetchProfile(session.user)
       else setLoading(false)
     })
 
@@ -25,7 +27,7 @@ export function AuthProvider({ children }) {
       setLoading(true)
       setUser(session?.user ?? null)
       if (session?.user) {
-        fetchProfile(session.user.id)
+        fetchProfile(session.user)
       } else {
         setProfile(null)
         setLoading(false)
@@ -35,15 +37,56 @@ export function AuthProvider({ children }) {
     return () => listener.subscription.unsubscribe()
   }, [])
 
-  const fetchProfile = async (userId) => {
+  const createProfileFromUser = async (authUser, fallbackRole = 'student') => {
+    const metadata = authUser.user_metadata || {}
+    const pendingRole = window.localStorage.getItem('pending_google_role')
+    const role =
+      authUser.email === ADMIN_EMAIL
+        ? 'admin'
+        : VALID_ROLES.has(pendingRole)
+          ? pendingRole
+          : VALID_ROLES.has(metadata.role)
+            ? metadata.role
+            : fallbackRole
+    const fullName = metadata.full_name || metadata.name || authUser.email?.split('@')[0] || 'User'
+
+    const payload = {
+      id: authUser.id,
+      full_name: fullName,
+      role,
+    }
+
+    if (metadata.phone_number) {
+      payload.phone = metadata.phone_number
+    }
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .upsert(payload, { onConflict: 'id' })
+      .select('*')
+      .single()
+
+    if (error) {
+      console.error('Profile creation failed:', error.message)
+      return null
+    }
+    return data
+  }
+
+  const fetchProfile = async (authUser) => {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', userId)
+      .eq('id', authUser.id)
 
-    if (error) setProfile(null)
-    else if (!data || data.length === 0) setProfile(null)
-    else setProfile(data[0])
+    if (error) {
+      setProfile(null)
+    } else if (!data || data.length === 0) {
+      const createdProfile = await createProfileFromUser(authUser)
+      setProfile(createdProfile)
+    } else {
+      setProfile(data[0])
+    }
     setLoading(false)
   }
 
@@ -80,11 +123,27 @@ export function AuthProvider({ children }) {
     return { data, error }
   }
 
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = async (role) => {
+    const redirectTo = import.meta.env.VITE_AUTH_REDIRECT_URL || `${window.location.origin}/auth/callback`
+
+    if (role) {
+      window.localStorage.setItem('pending_google_role', role)
+    } else {
+      window.localStorage.removeItem('pending_google_role')
+    }
+
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: {
+        redirectTo,
+        flowType: 'pkce',
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
+      },
     })
+
     return { data, error }
   }
 

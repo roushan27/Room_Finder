@@ -37,7 +37,7 @@ export default function Signup() {
   const handleGoogleSignup = async () => {
     setGoogleLoading(true)
     setError('')
-    const { error } = await signInWithGoogle()
+    const { error } = await signInWithGoogle(role)
     if (error) {
       setError(error.message)
       setGoogleLoading(false)

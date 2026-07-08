@@ -4,112 +4,129 @@ import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 
 const ADMIN_EMAIL = 'kumarroushan4122@gmail.com'
+const VALID_ROLES = new Set(['student', 'owner'])
 
 export default function AuthCallback() {
   const { user, profile, loading } = useAuth()
   const navigate = useNavigate()
-  const [settingRole, setSettingRole] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
-    if (loading) return
+    let isActive = true
 
-    if (!user) {
-      navigate('/login')
-      return
+    const ensureProfileAndRedirect = async () => {
+      const params = new URLSearchParams(window.location.search)
+      const errorCode = params.get('error')
+      const errorDescription = params.get('error_description')
+
+      if (errorCode) {
+        setError(errorDescription || 'Google sign-in failed. Please try again.')
+        return
+      }
+
+      if (loading) return
+
+      const activeUser = user || (await getSessionUser())
+
+      if (!isActive) return
+
+      if (!activeUser) {
+        navigate('/login', { replace: true })
+        return
+      }
+
+      if (profile) {
+        clearPendingRole()
+        navigate('/dashboard', { replace: true })
+        return
+      }
+
+      const created = await createMissingProfile(activeUser)
+      if (!isActive) return
+
+      if (created.error) {
+        setError(created.error)
+        return
+      }
+
+      clearPendingRole()
+      window.location.replace('/dashboard')
     }
 
-    // Profile already exists (returning user) — go straight to their dashboard
-    if (profile) {
-      navigate('/dashboard')
-      return
-    }
+    ensureProfileAndRedirect()
 
-    // Admin email skips the role-picker entirely and is auto-provisioned as admin
-    if (user.email === ADMIN_EMAIL) {
-      autoCreateAdminProfile()
+    return () => {
+      isActive = false
     }
-    // Otherwise, no profile yet — we wait here and show the role-picker below
   }, [user, profile, loading, navigate])
 
-  const autoCreateAdminProfile = async () => {
-    setSettingRole(true)
-    setError('')
-
-    const fullName = user.user_metadata?.full_name || user.user_metadata?.name || 'Admin'
-
-    const { error: insertError } = await supabase.from('profiles').insert({
-      id: user.id,
-      full_name: fullName,
-      role: 'admin',
-    })
-
-    if (insertError) {
-      setError(insertError.message)
-      setSettingRole(false)
-      return
+  const getSessionUser = async () => {
+    const { data, error: sessionError } = await supabase.auth.getSession()
+    if (sessionError) {
+      setError(sessionError.message)
+      return null
     }
 
-    window.location.href = '/dashboard'
+    return data.session?.user || null
   }
 
-  const handleChooseRole = async (role) => {
-    setSettingRole(true)
-    setError('')
+  const createMissingProfile = async (authUser) => {
+    const metadata = authUser.user_metadata || {}
+    const pendingRole = window.localStorage.getItem('pending_google_role')
+    const role =
+      authUser.email === ADMIN_EMAIL
+        ? 'admin'
+        : VALID_ROLES.has(pendingRole)
+          ? pendingRole
+          : VALID_ROLES.has(metadata.role)
+            ? metadata.role
+            : 'student'
 
-    const fullName = user.user_metadata?.full_name || user.user_metadata?.name || 'User'
-
-    const { error: insertError } = await supabase.from('profiles').insert({
-      id: user.id,
-      full_name: fullName,
-      role: role,
-    })
-
-    if (insertError) {
-      setError(insertError.message)
-      setSettingRole(false)
-      return
+    const payload = {
+      id: authUser.id,
+      full_name: metadata.full_name || metadata.name || authUser.email?.split('@')[0] || 'User',
+      role,
     }
 
-    // Force a reload so AuthContext refetches the profile and redirects correctly
-    window.location.href = '/dashboard'
+    if (metadata.phone_number) {
+      payload.phone = metadata.phone_number
+    }
+
+    const { error: upsertError } = await supabase
+      .from('profiles')
+      .upsert(payload, { onConflict: 'id' })
+
+    if (upsertError) {
+      return { error: upsertError.message }
+    }
+
+    return { error: null }
   }
 
-  // Loading, or already has a profile, or is the admin email being auto-provisioned —
-  // in all these cases just show a loading state, never the role-picker
-  if (loading || (user && profile) || (user && user.email === ADMIN_EMAIL)) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900">
-        <p className="text-white/60">Loading...</p>
-      </div>
-    )
+  const clearPendingRole = () => {
+    window.localStorage.removeItem('pending_google_role')
   }
 
-  // New Google user (non-admin) with no profile yet — ask them to pick a role once
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 px-4">
       <div className="w-full max-w-sm bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl p-6 sm:p-8 text-center">
-        <h2 className="text-xl font-bold text-white mb-2">Welcome!</h2>
-        <p className="text-white/60 text-sm mb-6">Aap kaun hain?</p>
-
-        {error && <p className="text-red-400 text-sm mb-4 bg-red-500/10 p-2 rounded-lg">{error}</p>}
-
-        <div className="flex flex-col gap-3">
-          <button
-            onClick={() => handleChooseRole('student')}
-            disabled={settingRole}
-            className="w-full py-3 rounded-xl bg-blue-500 hover:bg-blue-600 transition text-white font-semibold disabled:opacity-50"
-          >
-            🎓 I'm a Student
-          </button>
-          <button
-            onClick={() => handleChooseRole('owner')}
-            disabled={settingRole}
-            className="w-full py-3 rounded-xl bg-white/10 border border-white/20 text-white hover:bg-white/20 transition font-semibold disabled:opacity-50"
-          >
-            🏠 I'm a Room Owner
-          </button>
-        </div>
+        {error ? (
+          <>
+            <h2 className="text-xl font-bold text-white mb-2">Sign-in failed</h2>
+            <p className="text-red-300 text-sm mb-5 bg-red-500/10 p-3 rounded-lg">{error}</p>
+            <button
+              onClick={() => navigate('/login', { replace: true })}
+              className="w-full py-3 rounded-xl bg-blue-500 hover:bg-blue-600 transition text-white font-semibold"
+            >
+              Back to Login
+            </button>
+          </>
+        ) : (
+          <>
+            <h2 className="text-xl font-bold text-white mb-2">Signing you in...</h2>
+            <p className="text-white/60 text-sm">Please wait while we open your dashboard.</p>
+          </>
+        )}
       </div>
     </div>
   )

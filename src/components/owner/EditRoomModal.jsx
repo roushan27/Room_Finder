@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { supabase } from '../../lib/supabaseClient'
+import { useAuth } from '../../context/AuthContext'
 import { useModalBackButton } from '../../hooks/useModalBackButton'
+import { compressImage } from '../../utils/imageCompress'
 
 const FACILITY_OPTIONS = [
   'WiFi', 'AC', 'Food/Mess', 'Laundry', 'Parking',
@@ -11,6 +13,7 @@ const ROOM_TYPES = ['1BHK', '2BHK', 'Independent']
 
 export default function EditRoomModal({ room, onClose, onUpdated }) {
   useModalBackButton(true, onClose)
+  const { user } = useAuth()
   const [form, setForm] = useState({
     title: room.title,
     description: room.description || '',
@@ -22,8 +25,10 @@ export default function EditRoomModal({ room, onClose, onUpdated }) {
     room_type: room.room_type || '1BHK',
   })
   const [facilities, setFacilities] = useState(room.facilities || [])
+  const [selectedPhotos, setSelectedPhotos] = useState([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [uploadLabel, setUploadLabel] = useState('')
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
@@ -33,25 +38,92 @@ export default function EditRoomModal({ room, onClose, onUpdated }) {
     )
   }
 
+  const handlePhotoSelect = (e) => {
+    const newFiles = Array.from(e.target.files)
+    if (newFiles.length > 0) {
+      setSelectedPhotos((prev) => [...prev, ...newFiles])
+    }
+    e.target.value = ''
+  }
+
+  const uploadPhotos = async (files) => {
+    if (!files.length) return room.photos || []
+
+    const urls = []
+
+    for (let i = 0; i < files.length; i++) {
+      let file = files[i]
+      setUploadLabel(`Compressing image ${i + 1} of ${files.length}...`)
+
+      try {
+        file = await compressImage(file)
+      } catch {
+        // fall back to original file if compression fails
+      }
+
+      const fileExt = file.name.split('.').pop() || 'jpg'
+      const uniqueName = `${user.id}/${Date.now()}-${i}-${Math.random().toString(36).slice(2, 8)}.${fileExt}`
+
+      setUploadLabel(`Uploading image ${i + 1} of ${files.length}...`)
+
+      const { error: uploadError } = await supabase.storage.from('room-photos').upload(uniqueName, file, {
+        cacheControl: '3600',
+        upsert: false,
+      })
+
+      if (uploadError) {
+        throw new Error(`"${file.name}" upload failed: ${uploadError.message}`)
+      }
+
+      const { data } = supabase.storage.from('room-photos').getPublicUrl(uniqueName)
+      urls.push(data.publicUrl)
+    }
+
+    return urls
+  }
+
   const handleSave = async (e) => {
     e.preventDefault()
     setSaving(true)
     setError('')
 
-    const { error } = await supabase
-      .from('rooms')
-      .update({
-        title: form.title,
-        description: form.description,
-        address: form.address,
-        city: form.city,
-        price: parseFloat(form.price),
-        total_rooms: parseInt(form.total_rooms),
-        available_rooms: parseInt(form.available_rooms),
-        room_type: form.room_type,
-        facilities,
-      })
-      .eq('id', room.id)
+    try {
+      let updatedPhotos = room.photos || []
+
+      if (selectedPhotos.length > 0) {
+        updatedPhotos = await uploadPhotos(selectedPhotos)
+      }
+
+      const { error } = await supabase
+        .from('rooms')
+        .update({
+          title: form.title,
+          description: form.description,
+          address: form.address,
+          city: form.city,
+          price: parseFloat(form.price),
+          total_rooms: parseInt(form.total_rooms),
+          available_rooms: parseInt(form.available_rooms),
+          room_type: form.room_type,
+          facilities,
+          photos: updatedPhotos,
+        })
+        .eq('id', room.id)
+
+      if (error) {
+        setError(error.message)
+        setSaving(false)
+        setUploadLabel('')
+      } else {
+        setUploadLabel('')
+        onUpdated()
+        onClose()
+      }
+    } catch (err) {
+      setError(err.message)
+      setSaving(false)
+      setUploadLabel('')
+    }
 
     if (error) {
       setError(error.message)
@@ -158,6 +230,23 @@ export default function EditRoomModal({ room, onClose, onUpdated }) {
           </div>
 
           <div>
+            <label className="text-white/60 text-sm mb-2 block">Images</label>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handlePhotoSelect}
+              className="w-full text-sm text-white/70 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-blue-500 file:text-white file:cursor-pointer"
+            />
+            {selectedPhotos.length > 0 && (
+              <p className="text-xs text-blue-300 mt-2">{selectedPhotos.length} new image selected</p>
+            )}
+            {room.photos?.length > 0 && !selectedPhotos.length && (
+              <p className="text-xs text-white/40 mt-2">Current images will be kept unless you choose new ones.</p>
+            )}
+          </div>
+
+          <div>
             <label className="text-white/60 text-sm mb-2 block">Facilities</label>
             <div className="flex flex-wrap gap-2">
               {FACILITY_OPTIONS.map((facility) => (
@@ -176,6 +265,8 @@ export default function EditRoomModal({ room, onClose, onUpdated }) {
               ))}
             </div>
           </div>
+
+          {uploadLabel && <p className="text-sm text-blue-300">{uploadLabel}</p>}
 
           <button
             type="submit"
