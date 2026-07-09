@@ -28,7 +28,7 @@ export default function LandingPage() {
             onClick={() => navigate('/signup?role=student')}
             className="flex-1 py-2 rounded-xl bg-white/10 border border-white/20 text-white hover:bg-white/20 transition"
           >
-            Student
+            Students
           </button>
           <button
             onClick={() => navigate('/signup?role=owner')}
