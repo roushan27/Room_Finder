@@ -1,12 +1,15 @@
-import { useState } from 'react'
+import { useState, lazy, Suspense } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import { useModalBackButton } from '../../hooks/useModalBackButton'
 import { compressImage } from '../../utils/imageCompress'
 
+const MapPicker = lazy(() => import('./MapPicker'))
+
 const FACILITY_OPTIONS = [
   'WiFi', 'AC', 'Food/Mess', 'Laundry', 'Parking',
-  'Power Backup', 'Attached Bathroom', 'Furnished', 'Water Supply', 'CCTV'
+  'Power Backup', 'Attached Bathroom', 'Furnished', 'Water Supply', 'CCTV',
+  'Study Table', 'Wardrobe', 'Private Bathroom', 'Housekeeping'
 ]
 
 const ROOM_TYPES = ['1BHK', '2BHK', '3BHK', 'Independent']
@@ -20,8 +23,6 @@ export default function EditRoomModal({ room, onClose, onUpdated }) {
   const [form, setForm] = useState({
     title: room.title,
     description: room.description || '',
-    address: room.address,
-    city: room.city,
     price: room.price,
     total_rooms: room.total_rooms,
     available_rooms: room.available_rooms,
@@ -29,8 +30,12 @@ export default function EditRoomModal({ room, onClose, onUpdated }) {
     category: room.category || 'PG',
     occupancy: room.occupancy || 'Single',
     tenant_type: room.tenant_type || 'Students',
-    website: room.website || '',
-    requirements: room.requirements || '',
+    phone_number: room.phone_number || '',
+  })
+  const [coords, setCoords] = useState({
+    lat: room.latitude || null,
+    lng: room.longitude || null,
+    address: room.address || '',
   })
   const [facilities, setFacilities] = useState(room.facilities || [])
   const [selectedPhotos, setSelectedPhotos] = useState([])
@@ -95,6 +100,12 @@ export default function EditRoomModal({ room, onClose, onUpdated }) {
     setSaving(true)
     setError('')
 
+    if (!coords.lat || !coords.lng) {
+      setError('Please select the room location on the map')
+      setSaving(false)
+      return
+    }
+
     try {
       let updatedPhotos = room.photos || []
 
@@ -102,13 +113,17 @@ export default function EditRoomModal({ room, onClose, onUpdated }) {
         updatedPhotos = await uploadPhotos(selectedPhotos)
       }
 
+      const city = coords.address
+        ? coords.address.split(',').slice(-3, -2)[0]?.trim() || room.city || 'Unknown'
+        : room.city || 'Unknown'
+
       const { error } = await supabase
         .from('rooms')
         .update({
           title: form.title,
           description: form.description,
-          address: form.address,
-          city: form.city,
+          address: coords.address,
+          city,
           price: parseFloat(form.price),
           total_rooms: parseInt(form.total_rooms),
           available_rooms: parseInt(form.available_rooms),
@@ -116,10 +131,11 @@ export default function EditRoomModal({ room, onClose, onUpdated }) {
           category: form.category,
           occupancy: form.occupancy,
           tenant_type: form.tenant_type,
-          website: form.website,
-          requirements: form.requirements,
+          phone_number: form.phone_number || null,
           facilities,
           photos: updatedPhotos,
+          latitude: coords.lat,
+          longitude: coords.lng,
         })
         .eq('id', room.id)
 
@@ -132,7 +148,7 @@ export default function EditRoomModal({ room, onClose, onUpdated }) {
         onUpdated()
         onClose()
       }
-   } catch (err) {
+    } catch (err) {
       setError(err.message)
       setSaving(false)
       setUploadLabel('')
@@ -152,10 +168,12 @@ export default function EditRoomModal({ room, onClose, onUpdated }) {
         <form onSubmit={handleSave} className="space-y-3">
           <input
             name="title"
+            placeholder="Room title (e.g. Sunrise PG for Boys)"
             value={form.title}
             onChange={handleChange}
             required
-            className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:border-blue-400"
+            disabled={saving}
+            className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:border-blue-400 disabled:opacity-50"
           />
 
           <div>
@@ -165,10 +183,11 @@ export default function EditRoomModal({ room, onClose, onUpdated }) {
                 <button
                   type="button"
                   key={type}
+                  disabled={saving}
                   onClick={() => setForm({ ...form, room_type: type })}
-                  className={`px-4 py-2 rounded-lg text-sm border transition ${
+                  className={`px-4 py-2 rounded-lg text-sm border transition disabled:opacity-50 ${
                     form.room_type === type
-                      ? 'bg-blue-500 border-blue-400 text-white'
+                      ? 'bg-blue-500 border-blue-400 text-white shadow-lg shadow-blue-500/40'
                       : 'bg-white/10 border-white/20 text-white/60'
                   }`}
                 >
@@ -178,79 +197,6 @@ export default function EditRoomModal({ room, onClose, onUpdated }) {
             </div>
           </div>
 
-          <textarea
-            name="description"
-            value={form.description}
-            onChange={handleChange}
-            rows={2}
-            className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:border-blue-400"
-          />
-          <input
-            name="address"
-            value={form.address}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:border-blue-400"
-          />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <input
-              name="city"
-              value={form.city}
-              onChange={handleChange}
-              required
-              className="px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:border-blue-400"
-            />
-            <input
-              name="price"
-              type="number"
-              value={form.price}
-              onChange={handleChange}
-              required
-              className="px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:border-blue-400"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-white/60 text-sm">Total Rooms</label>
-              <input
-                name="total_rooms"
-                type="number"
-                min={1}
-                value={form.total_rooms}
-                onChange={handleChange}
-                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:border-blue-400"
-              />
-            </div>
-            <div>
-              <label className="text-white/60 text-sm">Available Rooms</label>
-              <input
-                name="available_rooms"
-                type="number"
-                min={0}
-                value={form.available_rooms}
-                onChange={handleChange}
-                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:border-blue-400"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="text-white/60 text-sm mb-2 block">Images</label>
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={handlePhotoSelect}
-              className="w-full text-sm text-white/70 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-blue-500 file:text-white file:cursor-pointer"
-            />
-            {selectedPhotos.length > 0 && (
-              <p className="text-xs text-blue-300 mt-2">{selectedPhotos.length} new image selected</p>
-            )}
-            {room.photos?.length > 0 && !selectedPhotos.length && (
-              <p className="text-xs text-white/40 mt-2">Current images will be kept unless you choose new ones.</p>
-            )}
-          </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <label className="text-white/60 text-sm mb-1 block">Category</label>
@@ -258,7 +204,8 @@ export default function EditRoomModal({ room, onClose, onUpdated }) {
                 value={form.category}
                 onChange={handleChange}
                 name="category"
-                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:border-blue-400"
+                disabled={saving}
+                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:border-blue-400 disabled:opacity-50"
               >
                 {CATEGORIES.map((category) => (
                   <option key={category} value={category} className="text-slate-900">{category}</option>
@@ -271,7 +218,8 @@ export default function EditRoomModal({ room, onClose, onUpdated }) {
                 value={form.occupancy}
                 onChange={handleChange}
                 name="occupancy"
-                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:border-blue-400"
+                disabled={saving}
+                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:border-blue-400 disabled:opacity-50"
               >
                 {OCCUPANCY_OPTIONS.map((option) => (
                   <option key={option} value={option} className="text-slate-900">{option}</option>
@@ -280,44 +228,41 @@ export default function EditRoomModal({ room, onClose, onUpdated }) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-              <label className="text-white/60 text-sm mb-1 block">Preferred Tenant</label>
-              <select
-                value={form.tenant_type}
-                onChange={handleChange}
-                name="tenant_type"
-                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:border-blue-400"
-              >
-                {TENANT_TYPES.map((option) => (
-                  <option key={option} value={option} className="text-slate-900">{option}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-white/60 text-sm mb-1 block">Website / Contact Link</label>
-              <input
-                name="website"
-                type="url"
-                placeholder="https://example.com"
-                value={form.website}
-                onChange={handleChange}
-                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:border-blue-400"
-              />
-            </div>
+          <div>
+            <label className="text-white/60 text-sm mb-1 block">Preferred Tenant</label>
+            <select
+              value={form.tenant_type}
+              onChange={handleChange}
+              name="tenant_type"
+              disabled={saving}
+              className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:border-blue-400 disabled:opacity-50"
+            >
+              {TENANT_TYPES.map((option) => (
+                <option key={option} value={option} className="text-slate-900">{option}</option>
+              ))}
+            </select>
           </div>
 
-          <div>
-            <label className="text-white/60 text-sm mb-1 block">Requirements</label>
-            <textarea
-              name="requirements"
-              placeholder="Mention age, gender, documents, college, or other requirements"
-              value={form.requirements}
-              onChange={handleChange}
-              rows={2}
-              className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:border-blue-400"
-            />
-          </div>
+          <textarea
+            name="description"
+            placeholder="Description"
+            value={form.description}
+            onChange={handleChange}
+            rows={3}
+            disabled={saving}
+            className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:border-blue-400 disabled:opacity-50"
+          />
+
+          <input
+            name="price"
+            type="number"
+            placeholder="Price per month (₹)"
+            value={form.price}
+            onChange={handleChange}
+            required
+            disabled={saving}
+            className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:border-blue-400 disabled:opacity-50"
+          />
 
           <div>
             <label className="text-white/60 text-sm mb-2 block">Facilities</label>
@@ -326,10 +271,11 @@ export default function EditRoomModal({ room, onClose, onUpdated }) {
                 <button
                   type="button"
                   key={facility}
+                  disabled={saving}
                   onClick={() => toggleFacility(facility)}
-                  className={`px-3 py-1.5 rounded-lg text-sm border transition ${
+                  className={`px-3 py-1.5 rounded-lg text-sm border transition disabled:opacity-50 ${
                     facilities.includes(facility)
-                      ? 'bg-blue-500 border-blue-400 text-white'
+                      ? 'bg-blue-500 border-blue-400 text-white shadow-md shadow-blue-500/30'
                       : 'bg-white/10 border-white/20 text-white/60'
                   }`}
                 >
@@ -339,12 +285,78 @@ export default function EditRoomModal({ room, onClose, onUpdated }) {
             </div>
           </div>
 
+          <Suspense fallback={<div className="bg-white/5 rounded-xl h-[250px] flex items-center justify-center text-white/30 text-sm">Loading map...</div>}>
+            <MapPicker
+              latitude={coords.lat}
+              longitude={coords.lng}
+              onChange={(lat, lng, address) => setCoords({ lat, lng, address })}
+            />
+          </Suspense>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-white/60 text-sm">Total Rooms</label>
+              <input
+                name="total_rooms"
+                type="number"
+                min={1}
+                value={form.total_rooms}
+                onChange={handleChange}
+                disabled={saving}
+                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:border-blue-400 disabled:opacity-50"
+              />
+            </div>
+            <div>
+              <label className="text-white/60 text-sm">Available Rooms</label>
+              <input
+                name="available_rooms"
+                type="number"
+                min={0}
+                value={form.available_rooms}
+                onChange={handleChange}
+                disabled={saving}
+                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:border-blue-400 disabled:opacity-50"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-white/60 text-sm mb-2 block">Images</label>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              disabled={saving}
+              onChange={handlePhotoSelect}
+              className="w-full text-sm text-white/70 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-blue-500 file:text-white file:cursor-pointer disabled:opacity-50"
+            />
+            {selectedPhotos.length > 0 && (
+              <p className="text-xs text-blue-300 mt-2">{selectedPhotos.length} new image(s) selected</p>
+            )}
+            {room.photos?.length > 0 && !selectedPhotos.length && (
+              <p className="text-xs text-white/40 mt-2">Current images will be kept unless you choose new ones.</p>
+            )}
+          </div>
+
+          <div>
+            <label className="text-white/60 text-sm mb-1 block">Phone Number (optional)</label>
+            <input
+              name="phone_number"
+              type="tel"
+              placeholder="+91 9876543210"
+              value={form.phone_number}
+              onChange={handleChange}
+              disabled={saving}
+              className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:border-blue-400 disabled:opacity-50"
+            />
+          </div>
+
           {uploadLabel && <p className="text-sm text-blue-300">{uploadLabel}</p>}
 
           <button
             type="submit"
             disabled={saving}
-            className="w-full py-3 rounded-xl bg-blue-500 hover:bg-blue-600 transition text-white font-semibold disabled:opacity-50"
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 transition text-white font-semibold disabled:opacity-50 shadow-lg shadow-blue-500/30"
           >
             {saving ? 'Saving...' : 'Save Changes'}
           </button>

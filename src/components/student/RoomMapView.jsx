@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { calculateDistance, formatDistance } from '../../utils/distance'
+import { useLocation } from '../../context/LocationContext'
 
 delete L.Icon.Default.prototype._getIconUrl
 L.Icon.Default.mergeOptions({
@@ -32,14 +33,18 @@ function FlyTo({ position, trigger }) {
 }
 
 export default function RoomMapView({ room }) {
-  const [liveLocation, setLiveLocation] = useState(null)
+  const { referenceLocation, updateReferenceLocation, useFixedLocation } = useLocation()
   const [locationError, setLocationError] = useState('')
   const [locating, setLocating] = useState(false)
   const [flyTrigger, setFlyTrigger] = useState(0)
 
+  // The point we measure distance from: user's live GPS if they've tapped the button,
+  // otherwise falls back to the fixed default (Sarala Birla University)
+  const liveLocation = referenceLocation ? [referenceLocation.lat, referenceLocation.lng] : null
+
   // Requires an explicit tap to work reliably on mobile browsers —
   // silent/automatic geolocation calls are often blocked on phones until the user interacts.
-  const requestLocation = () => {
+ const requestLocation = () => {
     if (!navigator.geolocation) {
       setLocationError('Geolocation not supported on this device')
       return
@@ -49,7 +54,11 @@ export default function RoomMapView({ room }) {
 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setLiveLocation([pos.coords.latitude, pos.coords.longitude])
+        updateReferenceLocation({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          label: 'My current location',
+        })
         setLocationError('')
         setLocating(false)
         setFlyTrigger((prev) => prev + 1)
@@ -99,21 +108,33 @@ export default function RoomMapView({ room }) {
 
      <div className="flex justify-between items-center">
   {distance !== null ? (
-    <p className="text-blue-300 text-sm font-medium">📏 {formatDistance(distance)} from your location</p>
-  ) : locationError ? (
+  <p className="text-blue-300 text-sm font-medium">
+    📏 {formatDistance(distance)} from {referenceLocation?.label === 'My current location' ? 'your location' : referenceLocation?.label}
+  </p>
+) : locationError ? (
     <p className="text-red-400 text-xs">{locationError}</p>
   ) : (
-    <p className="text-white/30 text-xs">Tap to see distance</p>
+    <p className="text-white/30 text-xs">Distance unavailable</p>
   )}
 
+  <div className="flex items-center gap-2 flex-shrink-0">
+  {referenceLocation?.label === 'My current location' && (
+    <button
+      onClick={useFixedLocation}
+      className="text-white/40 text-xs hover:text-white/70 transition underline"
+    >
+      Reset
+    </button>
+  )}
   <button
     onClick={requestLocation}
     disabled={locating}
-    className="text-blue-300 text-xs hover:text-blue-200 transition flex items-center gap-1 disabled:opacity-50 flex-shrink-0"
+    className="text-blue-300 text-xs hover:text-blue-200 transition flex items-center gap-1 disabled:opacity-50"
   >
-    📍 {locating ? 'Locating...' : 'Use current location'}
+    📍 {locating ? 'Locating...' : 'Use my exact location'}
   </button>
 </div>
+    </div>
     </div>
   )
 }
