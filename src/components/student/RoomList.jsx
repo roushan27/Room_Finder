@@ -34,7 +34,7 @@ export default function RoomList({ guestMode = false }) {
     setLoading(true)
     const { data, error } = await supabase
       .from('rooms')
-      .select('id, owner_id, title, description, address, city, price, total_rooms, available_rooms, room_type, facilities, photos, videos, avg_rating, total_ratings, latitude, longitude, created_at, is_active')
+      .select('id, owner_id, title, description, address, city, price, total_rooms, available_rooms, room_type, facilities, photos, videos, avg_rating, total_ratings, latitude, longitude, created_at, is_active, phone_number, category, occupancy, tenant_type')
       .eq('is_active', true)
       .order('created_at', { ascending: false })
       .limit(500)

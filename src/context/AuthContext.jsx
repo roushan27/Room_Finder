@@ -30,17 +30,19 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      if (error) {
-        supabase.auth.signOut()
-        setUser(null)
-        setLoading(false)
-        return
-      }
-      setUser(session?.user ?? null)
-      if (session?.user) fetchProfile(session.user)
-      else setLoading(false)
-    })
+  supabase.auth.getSession().then(({ data: { session }, error }) => {
+    if (error) {
+      // A transient refresh error shouldn't wipe out the saved session —
+      // just show no user for now; the SDK will retry on its own.
+      console.warn('Session check failed (will retry):', error.message)
+      setUser(null)
+      setLoading(false)
+      return
+    }
+    setUser(session?.user ?? null)
+    if (session?.user) fetchProfile(session.user)
+    else setLoading(false)
+  })
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setLoading(true)
