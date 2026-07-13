@@ -12,16 +12,16 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 })
 
-// Custom pulsing blue dot, like Google Maps' "you are here" marker
+// Custom pulsing blue dot matching the ecosystem typography layout
 const currentLocationIcon = L.divIcon({
   className: 'current-location-marker',
-  html: `<div style="position: relative; width: 20px; height: 20px;">
-      <div style="position: absolute; inset: 0; background: #3b82f6; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 8px rgba(59,130,246,0.8);"></div>
-      <div style="position: absolute; inset: -6px; background: rgba(59,130,246,0.3); border-radius: 50%; animation: pulseLoc 2s infinite;"></div>
+  html: `<div style="position: relative; width: 18px; height: 18px;">
+      <div style="position: absolute; inset: 0; background: #c87a65; border-radius: 50%; border: 2.5px solid white; box-shadow: 0 1px 6px rgba(200,122,101,0.4);"></div>
+      <div style="position: absolute; inset: -5px; background: rgba(200,122,101,0.25); border-radius: 50%; animation: pulseLoc 2s infinite ease-in-out;"></div>
     </div>
-    <style>@keyframes pulseLoc { 0% { transform: scale(0.8); opacity: 0.8; } 70% { transform: scale(2); opacity: 0; } 100% { transform: scale(0.8); opacity: 0; } }</style>`,
-  iconSize: [20, 20],
-  iconAnchor: [10, 10],
+    <style>@keyframes pulseLoc { 0% { transform: scale(0.8); opacity: 0.9; } 70% { transform: scale(1.9); opacity: 0; } 100% { transform: scale(0.8); opacity: 0; } }</style>`,
+  iconSize: [18, 18],
+  iconAnchor: [9, 9],
 })
 
 function FlyTo({ position, trigger }) {
@@ -38,13 +38,9 @@ export default function RoomMapView({ room }) {
   const [locating, setLocating] = useState(false)
   const [flyTrigger, setFlyTrigger] = useState(0)
 
-  // The point we measure distance from: user's live GPS if they've tapped the button,
-  // otherwise falls back to the fixed default (Sarala Birla University)
   const liveLocation = referenceLocation ? [referenceLocation.lat, referenceLocation.lng] : null
 
-  // Requires an explicit tap to work reliably on mobile browsers —
-  // silent/automatic geolocation calls are often blocked on phones until the user interacts.
- const requestLocation = () => {
+  const requestLocation = () => {
     if (!navigator.geolocation) {
       setLocationError('Geolocation not supported on this device')
       return
@@ -75,8 +71,8 @@ export default function RoomMapView({ room }) {
 
   if (!room.latitude || !room.longitude) {
     return (
-      <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-white/40 text-sm text-center">
-        Location not available for this room yet.
+      <div className="bg-slate-50 border border-slate-200/60 rounded-xl p-4 text-slate-400 text-xs font-bold uppercase tracking-wider text-center">
+        Spatial location parameters missing for this asset.
       </div>
     )
   }
@@ -90,51 +86,60 @@ export default function RoomMapView({ room }) {
     : [room.latitude, room.longitude]
 
   return (
-    <div className="space-y-2">
-      <div className="rounded-xl overflow-hidden border border-white/20" style={{ height: '220px' }}>
+    <div className="space-y-3 antialiased">
+      {/* Map viewport canvas card */}
+      <div className="rounded-xl overflow-hidden border border-slate-200/80 shadow-2xs z-0 relative" style={{ height: '220px' }}>
         <MapContainer center={center} zoom={13} style={{ height: '100%', width: '100%' }} scrollWheelZoom={false}>
-          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap contributors" />
+          <TileLayer 
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" 
+            attribution='&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap</a>' 
+          />
           <Marker position={[room.latitude, room.longitude]}>
-            <Popup>{room.title}</Popup>
+            <Popup>
+              <span className="font-bold text-xs text-slate-800">{room.title}</span>
+            </Popup>
           </Marker>
           {liveLocation && (
             <Marker position={liveLocation} icon={currentLocationIcon}>
-              <Popup>You are here</Popup>
+              <Popup>
+                <span className="font-bold text-xs text-slate-800">Your Target Coordinate</span>
+              </Popup>
             </Marker>
           )}
           <FlyTo position={liveLocation} trigger={flyTrigger} />
         </MapContainer>
       </div>
 
-     <div className="flex justify-between items-center">
-  {distance !== null ? (
-  <p className="text-blue-300 text-sm font-medium">
-    📏 {formatDistance(distance)} from {referenceLocation?.label === 'My current location' ? 'your location' : referenceLocation?.label}
-  </p>
-) : locationError ? (
-    <p className="text-red-400 text-xs">{locationError}</p>
-  ) : (
-    <p className="text-white/30 text-xs">Distance unavailable</p>
-  )}
+      {/* Control interface block */}
+      <div className="flex justify-between items-center gap-2 pt-0.5">
+        {distance !== null ? (
+          <p className="text-brand-coral text-xs font-black uppercase tracking-wider flex items-center gap-1">
+            <span>📏</span> {formatDistance(distance)} from {referenceLocation?.label === 'My current location' ? 'your location' : referenceLocation?.label}
+          </p>
+        ) : locationError ? (
+          <p className="text-brand-coral font-bold text-[11px] bg-brand-coral/5 px-2.5 py-1 rounded-lg border border-brand-coral/10">{locationError}</p>
+        ) : (
+          <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wide">Proximity metric deferred</p>
+        )}
 
-  <div className="flex items-center gap-2 flex-shrink-0">
-  {referenceLocation?.label === 'My current location' && (
-    <button
-      onClick={useFixedLocation}
-      className="text-white/40 text-xs hover:text-white/70 transition underline"
-    >
-      Reset
-    </button>
-  )}
-  <button
-    onClick={requestLocation}
-    disabled={locating}
-    className="text-blue-300 text-xs hover:text-blue-200 transition flex items-center gap-1 disabled:opacity-50"
-  >
-    📍 {locating ? 'Locating...' : 'Use my exact location'}
-  </button>
-</div>
-    </div>
+        <div className="flex items-center gap-3 flex-shrink-0">
+          {referenceLocation?.label === 'My current location' && (
+            <button
+              onClick={useFixedLocation}
+              className="text-slate-400 text-[11px] font-bold uppercase tracking-wider hover:text-slate-600 transition underline decoration-dotted underline-offset-2"
+            >
+              Reset
+            </button>
+          )}
+          <button
+            onClick={requestLocation}
+            disabled={locating}
+            className="text-brand-sage text-[11px] font-black uppercase tracking-wider hover:opacity-80 transition flex items-center gap-1 disabled:opacity-40"
+          >
+            📍 {locating ? 'Tracking...' : 'Sync GPS Location'}
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

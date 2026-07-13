@@ -71,9 +71,8 @@ export default function ChatPage() {
       .from('profiles')
       .select('full_name')
       .eq('id', otherUserId)
-      .maybeSingle()
-
-    setOtherName(data?.full_name || 'User')
+      .single()
+    if (data) setOtherName(data.full_name)
   }
 
   const fetchMessages = async () => {
@@ -131,9 +130,9 @@ export default function ChatPage() {
   }
 
   const getTickStatus = (msg) => {
-    if (msg.is_read) return 'read' // green double tick
-    if (msg.is_delivered) return 'delivered' // grey double tick
-    return 'sent' // single grey tick
+    if (msg.is_read) return 'read'
+    if (msg.is_delivered) return 'delivered'
+    return 'sent'
   }
 
   const groupedMessages = messages.reduce((groups, msg, idx) => {
@@ -152,19 +151,27 @@ export default function ChatPage() {
   }, [])
 
   return (
-    <div className="h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex flex-col">
-      <div className="flex items-center gap-3 p-3 sm:p-4 border-b border-white/10 bg-white/5 backdrop-blur-xl flex-shrink-0">
-        <button onClick={() => navigate(-1)} className="text-white/60 hover:text-white text-xl">
+    <div className="h-screen bg-[#fdeee0] flex flex-col font-sans antialiased text-slate-800">
+      {/* Header */}
+      <header className="w-full bg-gradient-to-r from-[#b5451a] to-[#e8792e] px-4 py-3 flex items-center gap-3 shadow-md sticky top-0 z-10 flex-shrink-0">
+        <button
+          onClick={() => navigate(-1)}
+          className="p-1.5 rounded-lg hover:bg-white/15 text-white transition-all outline-none font-bold"
+        >
           ←
         </button>
-        <h2 className="text-white font-semibold text-sm sm:text-base truncate">{otherName || 'Chat'}</h2>
-      </div>
+        <div className="min-w-0">
+          <h2 className="text-sm font-bold text-white truncate">{otherName || 'Chat'}</h2>
+          <p className="text-[10px] text-white/70 font-bold uppercase tracking-wider">Room #{roomId?.slice(0, 8)}</p>
+        </div>
+      </header>
 
-      <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3">
+      {/* Messages */}
+      <main className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3">
         {loading ? (
-          <p className="text-white/40 text-center">Loading messages...</p>
+          <p className="text-slate-400 text-center text-xs font-semibold">Loading messages...</p>
         ) : messages.length === 0 ? (
-          <p className="text-white/40 text-center">Koi message nahi hai abhi. Baat shuru karo!</p>
+          <p className="text-slate-400 text-center text-xs font-semibold">Koi message nahi hai abhi. Baat shuru karo!</p>
         ) : (
           groupedMessages.map((group, groupIdx) => {
             const isMe = group[0].sender_id === user.id
@@ -184,34 +191,34 @@ export default function ChatPage() {
                             e.stopPropagation()
                             setOpenMenuId(openMenuId === msg.id ? null : msg.id)
                           }}
-                          className="opacity-0 group-hover:opacity-100 text-white/40 hover:text-white text-sm px-1 transition"
+                          className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-slate-600 text-sm px-1 transition"
                         >
                           ⋮
                         </button>
                       )}
 
                       <div
-                        className={`max-w-[85%] sm:max-w-xs md:max-w-md px-3 sm:px-4 py-2 ${
+                        className={`max-w-[80%] sm:max-w-xs md:max-w-md px-4 py-2.5 text-xs font-semibold leading-relaxed shadow-xs ${
                           isMe
-                            ? `bg-blue-500 text-white ${isFirst ? 'rounded-t-2xl' : 'rounded-t-md'} ${
+                            ? `bg-[#5d8a6e] text-white ${isFirst ? 'rounded-t-2xl' : 'rounded-t-md'} ${
                                 isLast ? 'rounded-bl-2xl rounded-br-sm' : 'rounded-b-md'
                               }`
-                            : `bg-white/10 text-white ${isFirst ? 'rounded-t-2xl' : 'rounded-t-md'} ${
+                            : `bg-white border border-slate-200/60 text-slate-700 ${isFirst ? 'rounded-t-2xl' : 'rounded-t-md'} ${
                                 isLast ? 'rounded-br-2xl rounded-bl-sm' : 'rounded-b-md'
                               }`
                         }`}
                       >
-                        <p className="text-sm break-words">{msg.text}</p>
+                        {msg.text}
                       </div>
 
                       {isMe && openMenuId === msg.id && (
                         <div
                           onClick={(e) => e.stopPropagation()}
-                          className="absolute right-full mr-1 top-0 bg-slate-800 border border-white/20 rounded-lg shadow-xl z-10 overflow-hidden"
+                          className="absolute right-full mr-1 top-0 bg-white border border-slate-200 rounded-lg shadow-xl z-10 overflow-hidden"
                         >
                           <button
                             onClick={() => handleDelete(msg.id)}
-                            className="px-4 py-2 text-red-300 text-sm hover:bg-white/10 transition whitespace-nowrap"
+                            className="px-4 py-2 text-[#c1614a] text-xs font-bold hover:bg-red-50 transition whitespace-nowrap"
                           >
                             🗑️ Delete
                           </button>
@@ -222,13 +229,13 @@ export default function ChatPage() {
                 })}
 
                 <div className="flex items-center gap-1 px-1">
-                  <p className="text-[10px] text-white/30">
+                  <p className="text-[10px] text-slate-400 font-medium">
                     {new Date(lastMsg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>
                   {isMe && (
                     <span
                       className={`text-[11px] ${
-                        getTickStatus(lastMsg) === 'read' ? 'text-green-400' : 'text-white/30'
+                        getTickStatus(lastMsg) === 'read' ? 'text-[#5d8a6e] font-bold' : 'text-slate-400'
                       }`}
                     >
                       {getTickStatus(lastMsg) === 'sent' ? '✓' : '✓✓'}
@@ -240,23 +247,26 @@ export default function ChatPage() {
           })
         )}
         <div ref={bottomRef} />
-      </div>
+      </main>
 
-      <form onSubmit={sendMessage} className="p-3 sm:p-4 border-t border-white/10 bg-white/5 flex gap-2 flex-shrink-0">
-        <input
-          type="text"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Type a message..."
-          className="flex-1 px-4 py-2.5 sm:py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:border-blue-400 text-sm sm:text-base"
-        />
-        <button
-          type="submit"
-          className="px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-semibold transition text-sm sm:text-base"
-        >
-          Send
-        </button>
-      </form>
+      {/* Input */}
+      <footer className="w-full bg-white border-t border-slate-100 p-3 sticky bottom-0 flex-shrink-0">
+        <form onSubmit={sendMessage} className="max-w-xl mx-auto flex gap-2">
+          <input
+            type="text"
+            placeholder="Type your message..."
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            className="flex-grow px-4 py-2.5 bg-[#fdeee0] border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#5d8a6e] transition-all"
+          />
+          <button
+            type="submit"
+            className="px-5 py-2.5 bg-[#c1614a] hover:opacity-90 active:scale-95 text-white font-bold text-xs rounded-xl transition-all shadow-md"
+          >
+            Send
+          </button>
+        </form>
+      </footer>
     </div>
   )
 }

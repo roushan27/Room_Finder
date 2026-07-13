@@ -71,7 +71,7 @@ export default function EditRoomModal({ room, onClose, onUpdated }) {
       try {
         file = await compressImage(file)
       } catch {
-        // fall back to original file if compression fails
+        // fallback
       }
 
       const fileExt = file.name.split('.').pop() || 'jpg'
@@ -156,28 +156,45 @@ export default function EditRoomModal({ room, onClose, onUpdated }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 sm:p-4">
-      <div className="bg-slate-900/95 border border-white/20 rounded-t-2xl sm:rounded-2xl p-4 sm:p-6 w-full max-w-lg max-h-[92vh] sm:max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg sm:text-xl font-bold text-white">Edit Room</h2>
-          <button onClick={onClose} className="text-white/60 hover:text-white text-xl">✕</button>
+    // Backdrop transformed to matches soft neutral overlays
+    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-end sm:items-center justify-center z-50 sm:p-4 animate-fade-in text-slate-800">
+      <div className="bg-white border border-slate-200 rounded-t-3xl sm:rounded-2xl p-5 sm:p-6 w-full max-w-lg max-h-[92vh] sm:max-h-[90vh] overflow-y-auto shadow-2xl shadow-slate-900/10">
+        
+        {/* Header Layout Grid Block */}
+        <div className="flex justify-between items-center mb-5 pb-2 border-b border-slate-100">
+          <h2 className="text-base font-black text-brand-gold uppercase tracking-wider">
+            Edit Room Configuration
+          </h2>
+          <button 
+            onClick={onClose} 
+            className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-50 border border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition active:scale-95 text-xs font-bold"
+          >
+            ✕
+          </button>
         </div>
 
-        {error && <p className="text-red-400 text-sm mb-4 bg-red-500/10 p-2 rounded-lg">{error}</p>}
+        {error && (
+          <p className="text-brand-coral text-xs font-bold bg-brand-coral/10 p-3 rounded-xl border border-brand-coral/20 mb-4">
+            {error}
+          </p>
+        )}
 
-        <form onSubmit={handleSave} className="space-y-3">
+        <form onSubmit={handleSave} className="space-y-4 antialiased p-0.5">
+          {/* Title Input */}
           <input
             name="title"
-            placeholder="Room title (e.g. Sunrise PG for Boys)"
+            type="text"
+            placeholder="Room title"
             value={form.title}
             onChange={handleChange}
             required
             disabled={saving}
-            className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:border-blue-400 disabled:opacity-50"
+            className="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-800 placeholder-slate-400 text-xs focus:outline-none focus:border-brand-sage transition shadow-xs"
           />
 
+          {/* Room Type Configure Segment */}
           <div>
-            <label className="text-white/60 text-sm mb-2 block">Room Type</label>
+            <label className="text-brand-gold font-bold text-[11px] uppercase tracking-wider mb-2 block">Room Type</label>
             <div className="flex flex-wrap gap-2">
               {ROOM_TYPES.map((type) => (
                 <button
@@ -185,10 +202,10 @@ export default function EditRoomModal({ room, onClose, onUpdated }) {
                   key={type}
                   disabled={saving}
                   onClick={() => setForm({ ...form, room_type: type })}
-                  className={`px-4 py-2 rounded-lg text-sm border transition disabled:opacity-50 ${
+                  className={`px-4 py-1.5 rounded-xl text-xs font-bold transition border active:scale-95 ${
                     form.room_type === type
-                      ? 'bg-blue-500 border-blue-400 text-white shadow-lg shadow-blue-500/40'
-                      : 'bg-white/10 border-white/20 text-white/60'
+                      ? 'bg-brand-sage border-brand-sage text-white shadow-xs'
+                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
                   }`}
                 >
                   {type}
@@ -197,62 +214,66 @@ export default function EditRoomModal({ room, onClose, onUpdated }) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {/* Select Parameters Section Layout */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="text-white/60 text-sm mb-1 block">Category</label>
+              <label className="text-brand-gold font-bold text-[11px] uppercase tracking-wider mb-1 block">Category</label>
               <select
                 value={form.category}
                 onChange={handleChange}
                 name="category"
                 disabled={saving}
-                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:border-blue-400 disabled:opacity-50"
+                className="w-full px-3 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-semibold focus:outline-none focus:border-brand-sage transition shadow-xs"
               >
                 {CATEGORIES.map((category) => (
-                  <option key={category} value={category} className="text-slate-900">{category}</option>
+                  <option key={category} value={category}>{category}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="text-white/60 text-sm mb-1 block">Occupancy</label>
+              <label className="text-brand-gold font-bold text-[11px] uppercase tracking-wider mb-1 block">Occupancy</label>
               <select
                 value={form.occupancy}
                 onChange={handleChange}
                 name="occupancy"
                 disabled={saving}
-                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:border-blue-400 disabled:opacity-50"
+                className="w-full px-3 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-semibold focus:outline-none focus:border-brand-sage transition shadow-xs"
               >
                 {OCCUPANCY_OPTIONS.map((option) => (
-                  <option key={option} value={option} className="text-slate-900">{option}</option>
+                  <option key={option} value={option}>{option}</option>
                 ))}
               </select>
             </div>
           </div>
 
+          {/* Preferred Tenant Options */}
           <div>
-            <label className="text-white/60 text-sm mb-1 block">Preferred Tenant</label>
+            <label className="text-brand-gold font-bold text-[11px] uppercase tracking-wider mb-1 block">Preferred Tenant</label>
             <select
               value={form.tenant_type}
               onChange={handleChange}
               name="tenant_type"
               disabled={saving}
-              className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:border-blue-400 disabled:opacity-50"
+              className="w-full px-3 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-semibold focus:outline-none focus:border-brand-sage transition shadow-xs"
             >
               {TENANT_TYPES.map((option) => (
-                <option key={option} value={option} className="text-slate-900">{option}</option>
+                <option key={option} value={option}>{option}</option>
               ))}
             </select>
           </div>
 
+          {/* Description Block */}
           <textarea
             name="description"
             placeholder="Description"
             value={form.description}
             onChange={handleChange}
-            rows={3}
+            rows={2}
             disabled={saving}
-            className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:border-blue-400 disabled:opacity-50"
+            className="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-800 placeholder-slate-400 text-xs focus:outline-none focus:border-brand-sage transition shadow-xs resize-none"
           />
 
+          {/* Rent Price Box */}
           <input
             name="price"
             type="number"
@@ -261,22 +282,23 @@ export default function EditRoomModal({ room, onClose, onUpdated }) {
             onChange={handleChange}
             required
             disabled={saving}
-            className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:border-blue-400 disabled:opacity-50"
+            className="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-800 placeholder-slate-400 text-xs focus:outline-none focus:border-brand-sage transition shadow-xs"
           />
 
+          {/* Facilities Integration Workspace */}
           <div>
-            <label className="text-white/60 text-sm mb-2 block">Facilities</label>
-            <div className="flex flex-wrap gap-2">
+            <label className="text-brand-gold font-bold text-[11px] uppercase tracking-wider mb-2 block">Facilities</label>
+            <div className="flex flex-wrap gap-1.5">
               {FACILITY_OPTIONS.map((facility) => (
                 <button
                   type="button"
                   key={facility}
                   disabled={saving}
                   onClick={() => toggleFacility(facility)}
-                  className={`px-3 py-1.5 rounded-lg text-sm border transition disabled:opacity-50 ${
+                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition border active:scale-95 ${
                     facilities.includes(facility)
-                      ? 'bg-blue-500 border-blue-400 text-white shadow-md shadow-blue-500/30'
-                      : 'bg-white/10 border-white/20 text-white/60'
+                      ? 'bg-brand-sage border-brand-sage text-white'
+                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
                   }`}
                 >
                   {facility}
@@ -285,7 +307,8 @@ export default function EditRoomModal({ room, onClose, onUpdated }) {
             </div>
           </div>
 
-          <Suspense fallback={<div className="bg-white/5 rounded-xl h-[250px] flex items-center justify-center text-white/30 text-sm">Loading map...</div>}>
+          {/* Lazy Map Component Layer Wrapper */}
+          <Suspense fallback={<div className="bg-white border border-slate-200 rounded-xl h-[200px] flex items-center justify-center text-slate-400 text-xs font-bold animate-pulse">Loading Map Layer Workspace...</div>}>
             <MapPicker
               latitude={coords.lat}
               longitude={coords.lng}
@@ -293,9 +316,10 @@ export default function EditRoomModal({ room, onClose, onUpdated }) {
             />
           </Suspense>
 
+          {/* Capacity Settings Layout */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-white/60 text-sm">Total Rooms</label>
+              <label className="text-brand-gold font-bold text-[11px] uppercase tracking-wider mb-1 block">Total Rooms</label>
               <input
                 name="total_rooms"
                 type="number"
@@ -303,11 +327,11 @@ export default function EditRoomModal({ room, onClose, onUpdated }) {
                 value={form.total_rooms}
                 onChange={handleChange}
                 disabled={saving}
-                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:border-blue-400 disabled:opacity-50"
+                className="w-full px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-800 text-xs font-semibold focus:outline-none focus:border-brand-sage transition"
               />
             </div>
             <div>
-              <label className="text-white/60 text-sm">Available Rooms</label>
+              <label className="text-brand-gold font-bold text-[11px] uppercase tracking-wider mb-1 block">Available Rooms</label>
               <input
                 name="available_rooms"
                 type="number"
@@ -315,31 +339,33 @@ export default function EditRoomModal({ room, onClose, onUpdated }) {
                 value={form.available_rooms}
                 onChange={handleChange}
                 disabled={saving}
-                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:border-blue-400 disabled:opacity-50"
+                className="w-full px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-800 text-xs font-semibold focus:outline-none focus:border-brand-sage transition"
               />
             </div>
           </div>
 
-          <div>
-            <label className="text-white/60 text-sm mb-2 block">Images</label>
+          {/* Multi Image Update Control Block */}
+          <div className="bg-slate-50 border border-slate-200/60 p-3 rounded-xl">
+            <label className="text-brand-gold font-bold text-[11px] uppercase tracking-wider block mb-1">Images Asset Pipeline</label>
             <input
               type="file"
               accept="image/*"
               multiple
               disabled={saving}
               onChange={handlePhotoSelect}
-              className="w-full text-sm text-white/70 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-blue-500 file:text-white file:cursor-pointer disabled:opacity-50"
+              className="w-full text-xs text-slate-500 file:mr-3 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:bg-brand-sage file:text-white file:font-bold file:text-xs file:cursor-pointer disabled:opacity-50"
             />
             {selectedPhotos.length > 0 && (
-              <p className="text-xs text-blue-300 mt-2">{selectedPhotos.length} new image(s) selected</p>
+              <p className="text-[11px] text-brand-coral font-bold mt-2">✕ {selectedPhotos.length} new asset queue staged.</p>
             )}
             {room.photos?.length > 0 && !selectedPhotos.length && (
-              <p className="text-xs text-white/40 mt-2">Current images will be kept unless you choose new ones.</p>
+              <p className="text-[10px] text-slate-400 font-medium mt-1.5">Existing room storage arrays will remain active.</p>
             )}
           </div>
 
+          {/* Optional Fields Contact */}
           <div>
-            <label className="text-white/60 text-sm mb-1 block">Phone Number (optional)</label>
+            <label className="text-brand-gold font-bold text-[11px] uppercase tracking-wider mb-1 block">Phone Number (optional)</label>
             <input
               name="phone_number"
               type="tel"
@@ -347,18 +373,21 @@ export default function EditRoomModal({ room, onClose, onUpdated }) {
               value={form.phone_number}
               onChange={handleChange}
               disabled={saving}
-              className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:border-blue-400 disabled:opacity-50"
+              className="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-800 placeholder-slate-400 text-xs focus:outline-none focus:border-brand-sage transition shadow-xs"
             />
           </div>
 
-          {uploadLabel && <p className="text-sm text-blue-300">{uploadLabel}</p>}
+          {uploadLabel && (
+            <p className="text-xs text-brand-sage font-bold animate-pulse p-1">{uploadLabel}</p>
+          )}
 
+          {/* Trigger Button Block */}
           <button
             type="submit"
             disabled={saving}
-            className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 transition text-white font-semibold disabled:opacity-50 shadow-lg shadow-blue-500/30"
+            className="w-full py-2.5 mt-2 rounded-xl bg-brand-sage hover:opacity-90 transition text-white font-bold text-xs disabled:opacity-50 shadow-md shadow-emerald-700/10 active:scale-98"
           >
-            {saving ? 'Saving...' : 'Save Changes'}
+            {saving ? 'Processing Parameters...' : 'Commit Changes'}
           </button>
         </form>
       </div>

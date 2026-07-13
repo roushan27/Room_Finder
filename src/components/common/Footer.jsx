@@ -1,10 +1,11 @@
 export default function Footer() {
   return (
-    <footer className="mt-30 py-3 border-t border-white/10 text-center">
-      <p className="text-white/30 text-xs">
-        Made with <span className="text-red-400">♥</span> for students — helping you find a place to call home away from home.
+    // Centralized Update: Shifted to a soft slate border and neutral text palette
+    <footer className="mt-20 py-6 border-t border-slate-200/60 text-center w-full max-w-xl mx-auto">
+      <p className="text-slate-400 font-medium text-xs">
+        Made with <span className="text-brand-coral">♥</span> for students — helping you find a place to call home away from home.
       </p>
-      <p className="text-white/20 text-[10px] mt-0.5">
+      <p className="text-slate-400/70 text-[10px] mt-1.5 font-semibold uppercase tracking-wider">
         © {new Date().getFullYear()} Room Finder. All rights reserved.
       </p>
     </footer>

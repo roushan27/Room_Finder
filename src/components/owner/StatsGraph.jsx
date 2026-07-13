@@ -3,7 +3,8 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recha
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 
-const COLORS = ['#3b82f6', '#f59e0b', '#10b981', '#ec4899', '#8b5cf6', '#06b6d4', '#ef4444', '#eab308']
+// Calibrated to fit soft minimal tokens: brand-sage, brand-gold, slate neutrals, and brand-coral accent variations
+const COLORS = ['#658872', '#CBB26A', '#475569', '#E07A5F', '#818CF8', '#94A3B8', '#F43F5E', '#34D399']
 
 export default function StatsGraph({ refreshTrigger }) {
   const { user } = useAuth()
@@ -26,7 +27,7 @@ export default function StatsGraph({ refreshTrigger }) {
     if (rooms) {
       const chartData = rooms.map((r) => ({
         name: r.title.length > 14 ? r.title.slice(0, 14) + '...' : r.title,
-        value: r.avg_rating > 0 ? r.avg_rating : 0.1, // small value so 0-rated rooms still show a sliver
+        value: r.avg_rating > 0 ? r.avg_rating : 0.1, // small sliver fallback
       }))
       setData(chartData)
 
@@ -55,60 +56,92 @@ export default function StatsGraph({ refreshTrigger }) {
     setLoading(false)
   }
 
-  if (loading) return <p className="text-white/60">Loading stats...</p>
+  if (loading) {
+    return (
+      <p className="text-slate-400 font-bold text-xs tracking-wider animate-pulse py-4">
+        Aggregating analytics data...
+      </p>
+    )
+  }
 
   return (
-    <div className="space-y-6">
-      {/* Summary cards */}
+    <div className="space-y-6 antialiased text-slate-800">
+      
+      {/* Structural Minimalist Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-5">
-          <p className="text-white/50 text-sm">Total Rooms</p>
-          <p className="text-3xl font-bold text-white mt-1">{summary.totalRooms}</p>
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs">
+          <p className="text-brand-gold font-bold text-[11px] uppercase tracking-wider">Total Rooms</p>
+          <p className="text-3xl font-black text-slate-800 mt-1 tracking-tight">{summary.totalRooms}</p>
         </div>
-        <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-5">
-          <p className="text-white/50 text-sm">Total Bookings</p>
-          <p className="text-3xl font-bold text-blue-300 mt-1">{summary.totalBookings}</p>
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs">
+          <p className="text-brand-gold font-bold text-[11px] uppercase tracking-wider">Total Bookings</p>
+          <p className="text-3xl font-black text-slate-800 mt-1 tracking-tight">{summary.totalBookings}</p>
         </div>
-        <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-5">
-          <p className="text-white/50 text-sm">Average Rating</p>
-          <p className="text-3xl font-bold text-yellow-400 mt-1">⭐ {summary.avgRating}</p>
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs">
+          <p className="text-brand-gold font-bold text-[11px] uppercase tracking-wider">Average Rating</p>
+          <p className="text-3xl font-black text-brand-sage mt-1 tracking-tight flex items-center gap-1.5">
+            <span className="text-xl">⭐</span> {summary.avgRating}
+          </p>
         </div>
       </div>
 
-      {/* Donut chart */}
-      <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-5">
-        <h3 className="text-white font-semibold mb-4">Ratings by Room</h3>
+      {/* Analytics Chart Block Canvas */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs">
+        <h3 className="text-brand-gold font-bold text-[11px] uppercase tracking-wider mb-5 pb-2 border-b border-slate-100">
+          Ratings Distribution by Asset
+        </h3>
         {data.length === 0 ? (
-          <p className="text-white/40 text-sm">No rooms yet to show data</p>
+          <p className="text-slate-400 text-xs font-semibold py-4 text-center">
+            No dynamic telemetry metrics recorded yet.
+          </p>
         ) : (
-          <ResponsiveContainer width="100%" height={280}>
-            <PieChart>
-              <Pie
-                data={data}
-                dataKey="value"
-                nameKey="name"
-                innerRadius={60}
-                outerRadius={100}
-                paddingAngle={3}
-                label={({ name }) => name}
-                labelLine={false}
-              >
-                {data.map((_, index) => (
-                  <Cell key={index} fill={COLORS[index % COLORS.length]} stroke="rgba(0,0,0,0.2)" />
-                ))}
-              </Pie>
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: 'rgba(15,23,42,0.9)',
-                  border: '1px solid rgba(255,255,255,0.2)',
-                  borderRadius: '8px',
-                  color: 'white',
-                }}
-                formatter={(value) => value.toFixed(1) + ' ⭐'}
-              />
-              <Legend wrapperStyle={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)' }} />
-            </PieChart>
-          </ResponsiveContainer>
+          <div className="w-full" style={{ minHeight: '280px' }}>
+            <ResponsiveContainer width="100%" height={280}>
+              <PieChart>
+                <Pie
+                  data={data}
+                  dataKey="value"
+                  nameKey="name"
+                  innerRadius={65}
+                  outerRadius={95}
+                  paddingAngle={4}
+                  label={({ name }) => name}
+                  labelLine={false}
+                  className="focus:outline-none"
+                >
+                  {data.map((_, index) => (
+                    <Cell 
+                      key={index} 
+                      fill={COLORS[index % COLORS.length]} 
+                      stroke="#ffffff" 
+                      strokeWidth={2}
+                      className="focus:outline-none"
+                    />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '12px',
+                    fontSize: '11px',
+                    fontWeight: '700',
+                    color: '#1e293b',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+                  }}
+                  formatter={(value) => [`${value.toFixed(1)} ⭐`, 'Rating Allocation']}
+                />
+                <Legend 
+                  wrapperStyle={{ 
+                    fontSize: '11px', 
+                    fontWeight: '600',
+                    color: '#475569',
+                    paddingTop: '10px'
+                  }} 
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
         )}
       </div>
     </div>

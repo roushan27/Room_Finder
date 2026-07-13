@@ -91,24 +91,27 @@ export default function NotificationBell() {
 
   return (
     <div className="relative" ref={dropdownRef}>
+      {/* Centralized Update: Transformed alpha toggle trigger button to clean solid container */}
       <button
         onClick={handleToggle}
-        className="relative w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl bg-white/10 border border-white/20 text-white hover:bg-white/20 transition"
+        className="relative w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition shadow-xs outline-none active:scale-95"
       >
         <span className="text-base sm:text-lg">🔔</span>
         {hasUnread && (
-          <span className="absolute top-1 right-1 sm:top-1.5 sm:right-1.5 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-pink-500 rounded-full border-2 border-slate-900" />
+          // Unread badge changed from bright neon pink to clean brand-coral accent indicator
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-brand-coral rounded-full ring-2 ring-white" />
         )}
       </button>
 
       {open && (
-        <div className="fixed sm:absolute left-2 right-2 sm:left-auto sm:right-0 top-16 sm:top-auto sm:mt-2 w-auto sm:w-80 max-h-96 overflow-y-auto bg-slate-900/95 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl z-50">
-          <div className="flex justify-between items-center p-4 border-b border-white/10">
-            <h3 className="text-white font-semibold text-sm">Notifications</h3>
+        // Converted from dark alpha modal panel to an elegant pure solid white drop menu layer
+        <div className="fixed sm:absolute left-2 right-2 sm:left-auto sm:right-0 top-16 sm:top-auto sm:mt-2 w-auto sm:w-80 max-h-96 overflow-y-auto bg-white border border-slate-200 rounded-2xl shadow-xl shadow-slate-200/50 z-50">
+          <div className="flex justify-between items-center p-4 border-b border-slate-100">
+            <h3 className="text-brand-gold font-black text-xs uppercase tracking-wider">Notifications</h3>
             {notifications.length > 0 && (
               <button
                 onClick={handleClearAll}
-                className="text-white/40 text-xs hover:text-red-300 transition"
+                className="text-slate-400 text-xs font-bold hover:text-brand-coral transition"
               >
                 Clear all
               </button>
@@ -116,17 +119,17 @@ export default function NotificationBell() {
           </div>
 
           {notifications.length === 0 ? (
-            <p className="text-white/40 text-sm text-center py-8">No notifications yet</p>
+            <p className="text-slate-400 font-medium text-xs text-center py-8">No notifications yet</p>
           ) : (
-            <div className="divide-y divide-white/5">
+            <div className="divide-y divide-slate-100">
               {notifications.map((n) => (
                 <div
                   key={n.id}
-                  className="flex justify-between items-start gap-2 p-3 hover:bg-white/5 transition group"
+                  className="flex justify-between items-start gap-3 p-3.5 hover:bg-slate-50/80 transition"
                 >
                   <div className="min-w-0">
-                    <p className="text-white/90 text-sm">{n.message}</p>
-                    <p className="text-white/30 text-xs mt-1">
+                    <p className="text-slate-700 font-medium text-xs leading-relaxed">{n.message}</p>
+                    <p className="text-slate-400 text-[10px] font-bold mt-1">
                       {new Date(n.created_at).toLocaleString([], {
                         day: 'numeric',
                         month: 'short',
@@ -137,7 +140,7 @@ export default function NotificationBell() {
                   </div>
                   <button
                     onClick={() => handleDelete(n.id)}
-                    className="text-white/40 hover:text-red-400 transition text-sm flex-shrink-0"
+                    className="text-slate-400 hover:text-brand-coral transition text-xs flex-shrink-0 p-1"
                     title="Delete"
                   >
                     🗑️

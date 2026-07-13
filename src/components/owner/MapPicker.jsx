@@ -55,6 +55,7 @@ export default function MapPicker({ latitude, longitude, onChange }) {
     setResolvedAddress(address)
     onChange(lat, lng, address)
   }
+  
   const runSearch = async () => {
     if (!query.trim()) return
     setSearching(true)
@@ -85,8 +86,6 @@ export default function MapPicker({ latitude, longitude, onChange }) {
     setQuery('')
   }
 
-  
-  // Asks for browser location permission and places the pin at the current GPS position
   const handleUseCurrentLocation = () => {
     if (!navigator.geolocation) {
       setLocationError('Geolocation not supported on this device')
@@ -115,65 +114,69 @@ export default function MapPicker({ latitude, longitude, onChange }) {
         setLocating(false)
       },
       { enableHighAccuracy: true, timeout: 10000 }
-    )
-  }
+    );
+  };
 
-  
+  return (
+    <div className="antialiased text-slate-800">
+      <label className="text-brand-gold font-bold text-[11px] uppercase tracking-wider mb-2 block">
+        Geographic Location Layout
+      </label>
 
-  
-return (
-    <div>
-      <label className="text-white/60 text-sm mb-2 block">Room Location</label>
-
+      {/* Address Search Subsystem */}
       <div className="flex gap-2 mb-2">
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={handleSearchKeyDown}
-          placeholder="Search an address..."
-          className="flex-1 px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/40 text-sm focus:outline-none focus:border-blue-400"
+          placeholder="Search for an address or milestone..."
+          className="flex-1 px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-800 placeholder-slate-400 text-xs focus:outline-none focus:border-brand-sage transition shadow-xs"
         />
         <button
           type="button"
           onClick={runSearch}
           disabled={searching}
-          className="px-3 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-sm transition disabled:opacity-50"
+          className="px-4 py-2 rounded-xl bg-brand-sage text-white text-xs font-bold hover:opacity-90 transition disabled:opacity-50 active:scale-95"
         >
           {searching ? '...' : 'Find'}
         </button>
       </div>
 
+      {/* Popover Search Results Drops */}
       {results.length > 0 && (
-        <div className="mb-2 bg-slate-800 border border-white/20 rounded-lg overflow-hidden">
+        <div className="mb-2 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden max-h-[180px] overflow-y-auto">
           {results.map((r, i) => (
             <button
               key={i}
               type="button"
               onClick={() => selectResult(r)}
-              className="w-full text-left px-3 py-2 text-white/80 text-xs hover:bg-white/10 transition border-b border-white/5 last:border-0"
+              className="w-full text-left px-3 py-2 text-slate-700 text-xs hover:bg-slate-50 transition border-b border-slate-100 last:border-0 font-medium"
             >
-              {r.display_name}
+              📍 {r.display_name}
             </button>
           ))}
         </div>
       )}
 
+      {/* GPS Geolocation Active Component */}
       <button
         type="button"
         onClick={handleUseCurrentLocation}
         disabled={locating}
-        className="w-full mb-2 px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm hover:bg-white/20 transition disabled:opacity-50 flex items-center justify-center gap-2"
+        className="w-full mb-3 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-100 transition disabled:opacity-50 flex items-center justify-center gap-2 active:scale-98"
       >
-        <span>📍</span> {locating ? 'Getting your location...' : 'Use Current Location'}
+        <span>🎯</span> {locating ? 'Acquiring GPS coordinates...' : 'Use My Current Location'}
       </button>
 
       {locationError && (
-        <p className="text-red-400 text-xs mb-2">{locationError}</p>
+        <p className="text-brand-coral text-[11px] font-bold mb-2 px-1">
+          ⚠ {locationError}
+        </p>
       )}
 
-      <div className="rounded-xl overflow-hidden border border-white/20" style={{ height: '250px' }}>
-
+      {/* Main Map Frame */}
+      <div className="rounded-2xl overflow-hidden border border-slate-200 shadow-inner z-10 relative" style={{ height: '220px' }}>
         <MapContainer center={position} zoom={13} style={{ height: '100%', width: '100%' }}>
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap contributors" />
           <Marker position={position} />
@@ -182,10 +185,16 @@ return (
         </MapContainer>
       </div>
 
-      <p className="text-white/40 text-xs mt-1">Tap the map or use your current location to place the exact pin.</p>
+      <p className="text-slate-400 text-[10px] font-semibold mt-2 px-1 uppercase tracking-wide">
+        Interact with map layout canvas to override geolocation marker positions.
+      </p>
 
+      {/* Resolved Reverse Geocode Box */}
       {resolvedAddress && (
-        <p className="text-blue-300 text-xs mt-2 bg-blue-500/10 px-3 py-2 rounded-lg">📍 {resolvedAddress}</p>
+        <p className="text-brand-sage text-xs font-semibold mt-3 bg-brand-sage/5 border border-brand-sage/20 px-3 py-2.5 rounded-xl flex items-start gap-1.5 break-words">
+          <span className="text-base leading-none">📍</span>
+          <span className="flex-1">{resolvedAddress}</span>
+        </p>
       )}
     </div>
   )

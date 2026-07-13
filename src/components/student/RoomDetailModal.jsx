@@ -64,7 +64,6 @@ export default function RoomDetailModal({ room, onClose, guestMode = false }) {
   const goPrev = () => goToIndex(activeIdx === 0 ? mediaCount - 1 : activeIdx - 1)
   const goNext = () => goToIndex(activeIdx === mediaCount - 1 ? 0 : activeIdx + 1)
 
-  // Swipe gesture support — swipe left/right on the media area to change photo/video
   const handleTouchStart = (e) => {
     touchStartX.current = e.touches[0].clientX
   }
@@ -79,23 +78,25 @@ export default function RoomDetailModal({ room, onClose, guestMode = false }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 sm:p-4">
-      <div className="bg-slate-900/95 border border-white/20 rounded-t-2xl sm:rounded-2xl w-full max-w-2xl max-h-[92vh] sm:max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-end sm:items-center justify-center z-50 sm:p-4 antialiased text-slate-800">
+      <div className="bg-white border border-slate-200 rounded-t-3xl sm:rounded-2xl w-full max-w-2xl max-h-[92vh] sm:max-h-[90vh] overflow-y-auto shadow-2xl">
+        
+        {/* Media Block Vault */}
         <div
-  className="relative h-56 sm:h-64 bg-black flex items-center justify-center overflow-hidden"
-  onTouchStart={handleTouchStart}
-  onTouchEnd={handleTouchEnd}
-  style={{ scrollBehavior: 'smooth' }}
->
+          className="relative h-60 sm:h-72 bg-slate-100 flex items-center justify-center overflow-hidden border-b border-slate-100"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          style={{ scrollBehavior: 'smooth' }}
+        >
           {mediaCount > 0 ? (
-           activeMedia.type === 'photo' ? (
+            activeMedia.type === 'photo' ? (
               <>
                 {!loadedImages[activeIdx] && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-slate-800 overflow-hidden">
+                  <div className="absolute inset-0 flex items-center justify-center bg-slate-50 overflow-hidden">
                     <div
                       className="absolute inset-0"
                       style={{
-                        background: 'linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.05) 75%)',
+                        background: 'linear-gradient(90deg, rgba(0,0,0,0.02) 25%, rgba(0,0,0,0.06) 50%, rgba(0,0,0,0.02) 75%)',
                         backgroundSize: '200% 100%',
                         animation: 'shimmer 1.5s infinite',
                       }}
@@ -114,150 +115,182 @@ export default function RoomDetailModal({ room, onClose, guestMode = false }) {
                 />
               </>
             ) : playingVideo ? (
-              <video src={activeMedia.url} controls autoPlay className="w-full h-full object-contain bg-black" />
+              <video src={activeMedia.url} controls autoPlay className="w-full h-full object-contain bg-slate-950" />
             ) : (
-              // Video not loaded until tapped — saves bandwidth, faster initial load
               <button
                 onClick={() => setPlayingVideo(true)}
-                className="relative w-full h-full flex items-center justify-center bg-slate-800"
+                className="relative w-full h-full flex items-center justify-center bg-slate-50 group"
               >
-                <span className="absolute inset-0 flex items-center justify-center text-white/40 text-xs">
-                  Tap to load video
+                <span className="absolute bottom-4 text-slate-400 font-bold text-[10px] uppercase tracking-wider">
+                  Tap to load video content
                 </span>
-                <span className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center text-3xl text-white z-10">
+                <span className="w-14 h-14 rounded-full bg-white border border-slate-200 flex items-center justify-center text-xl text-brand-sage shadow-sm group-hover:scale-105 transition-transform pl-1">
                   ▶
                 </span>
               </button>
             )
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-white/20">No media available</div>
+            <div className="w-full h-full flex items-center justify-center text-slate-400 font-bold text-xs uppercase tracking-wider">
+              No Asset Media Available
+            </div>
           )}
 
+          {/* Core Dismissal Anchor */}
           <button
             onClick={onClose}
-            className="absolute top-3 right-3 bg-black/60 text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/80 z-10"
+            className="absolute top-4 right-4 bg-white/90 text-slate-700 w-8 h-8 rounded-full flex items-center justify-center hover:bg-white shadow-xs border border-slate-200/50 font-bold text-xs transition z-10"
           >
             ✕
           </button>
 
           {mediaCount > 1 && (
             <>
-              <button onClick={goPrev} className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/70">‹</button>
-              <button onClick={goNext} className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/70">›</button>
-              <span className="absolute bottom-3 right-3 bg-black/60 text-white text-xs px-2 py-1 rounded-full">{activeIdx + 1} / {mediaCount}</span>
+              <button onClick={goPrev} className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/90 border border-slate-200/50 text-slate-700 w-8 h-8 rounded-full flex items-center justify-center shadow-2xs hover:bg-white font-bold transition">‹</button>
+              <button onClick={goNext} className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/90 border border-slate-200/50 text-slate-700 w-8 h-8 rounded-full flex items-center justify-center shadow-2xs hover:bg-white font-bold transition">›</button>
+              <span className="absolute bottom-4 right-4 bg-slate-900/80 backdrop-blur-xs text-white text-[10px] font-black px-2.5 py-1 rounded-md tracking-wider">
+                {activeIdx + 1} / {mediaCount}
+              </span>
             </>
           )}
         </div>
 
+        {/* Swipe Thumbnails Pipeline */}
         {mediaCount > 1 && (
-          <div className="flex gap-2 overflow-x-auto p-3 bg-black/20 scroll-smooth" style={{ scrollBehavior: 'smooth', WebkitOverflowScrolling: 'touch' }}>
+          <div className="flex gap-2 overflow-x-auto p-4 bg-slate-50 border-b border-slate-100 scroll-smooth">
             {mediaItems.map((item, i) => (
               <button
                 key={i}
                 onClick={() => goToIndex(i)}
-                className={`relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition ${
-                  i === activeIdx ? 'border-blue-400 opacity-100' : 'border-white/10 opacity-60 hover:opacity-90'
+                className={`relative flex-shrink-0 w-14 h-14 rounded-xl overflow-hidden border-2 transition ${
+                  i === activeIdx ? 'border-brand-sage opacity-100' : 'border-slate-200 opacity-60 hover:opacity-90'
                 }`}
               >
-               {item.type === 'photo' ? (
-  <img
-    src={item.url}
-    alt={`Media ${i + 1}`}
-    loading="lazy"
-    className="w-full h-full object-cover bg-slate-700"
-    style={{
-      background: 'linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.05) 75%)',
-    }}
-  />
-) : (
-                  <span className="w-full h-full flex items-center justify-center bg-slate-800 text-white text-lg">▶</span>
+                {item.type === 'photo' ? (
+                  <img src={item.url} alt={`Thumb ${i + 1}`} loading="lazy" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="w-full h-full flex items-center justify-center bg-slate-200 text-slate-600 text-xs font-bold">▶</span>
                 )}
               </button>
             ))}
           </div>
         )}
 
-        <div className="p-4 sm:p-6">
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1 mb-2">
-            <h2 className="text-xl sm:text-2xl font-bold text-white">{room.title}</h2>
+        {/* Descriptive Information Field */}
+        <div className="p-5 sm:p-7 space-y-5">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+            <div>
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">{room.title}</h2>
+              <p className="text-slate-400 text-xs font-semibold tracking-wide mt-1 uppercase">{room.city}</p>
+            </div>
             {room.avg_rating > 0 && (
-              <span className="text-yellow-400 font-medium text-sm sm:text-base">⭐ {room.avg_rating.toFixed(1)} ({room.total_ratings})</span>
+              <span className="text-amber-500 font-black text-sm sm:text-base border border-amber-100 bg-amber-50/50 px-3 py-1 rounded-xl flex items-center gap-1.5 self-start">
+                ★ {room.avg_rating.toFixed(1)} <span className="text-slate-400 font-bold text-xs">({room.total_ratings})</span>
+              </span>
             )}
           </div>
 
-          <p className="text-white/50 mb-3 text-sm">{room.city}</p>
-          <p className="text-blue-300 text-lg sm:text-xl font-semibold mb-4">₹{room.price}/month</p>
+          <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex justify-between items-center">
+            <div>
+              <p className="text-brand-gold font-bold text-[10px] uppercase tracking-wider">Financial Assessment</p>
+              <p className="text-xl font-black text-slate-900 mt-0.5 tracking-tight">
+                ₹{room.price.toLocaleString('en-IN')}<span className="text-slate-400 font-medium text-xs">/month</span>
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-brand-gold font-bold text-[10px] uppercase tracking-wider">Availability</p>
+              <p className="text-xs font-black text-brand-sage mt-1">
+                {room.available_rooms} of {room.total_rooms} units free
+              </p>
+            </div>
+          </div>
 
-          {room.description && <p className="text-white/70 mb-4 text-sm sm:text-base">{room.description}</p>}
+          {room.description && (
+            <div className="space-y-1.5">
+              <h4 className="text-brand-gold font-bold text-[11px] uppercase tracking-wider">Overview</h4>
+              <p className="text-slate-600 text-sm leading-relaxed">{room.description}</p>
+            </div>
+          )}
 
-          <p className="text-white/50 mb-4 text-sm sm:text-base">{room.available_rooms} of {room.total_rooms} rooms available</p>
-
-          <div className="mb-4">
-            <h4 className="text-white/60 text-sm mb-2">Location</h4>
-            <Suspense fallback={<div className="bg-white/5 rounded-xl h-[220px] flex items-center justify-center text-white/30 text-sm">Loading map...</div>}>
-              <RoomMapView room={room} />
+          {/* Spatial Mapping Box */}
+          <div className="space-y-2">
+            <h4 className="text-brand-gold font-bold text-[11px] uppercase tracking-wider">Spatial Location</h4>
+            <Suspense fallback={<div className="bg-slate-50 border border-slate-200 rounded-2xl h-[220px] flex items-center justify-center text-slate-400 text-xs font-bold uppercase tracking-wider animate-pulse">Loading map viewport...</div>}>
+              <div className="rounded-2xl overflow-hidden border border-slate-200 shadow-2xs">
+                <RoomMapView room={room} />
+              </div>
             </Suspense>
           </div>
 
           {room.facilities?.length > 0 && (
-  <div className="mb-4">
-    <h4 className="text-white/60 text-sm mb-2">Facilities</h4>
-    <div className="flex flex-wrap gap-2">
-      {room.facilities.map((f) => (
-        <span key={f} className="px-3 py-1 rounded-lg bg-white/10 text-white/80 text-xs sm:text-sm">{f}</span>
-      ))}
-    </div>
-  </div>
-)}
-
-{room.phone_number && (
-  <div className="mb-4">
-    <h4 className="text-white/60 text-sm mb-2">Contact</h4>
-    {guestMode || !user ? (
-      <button
-        onClick={requireLogin}
-        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white/60 text-sm font-medium hover:bg-white/15 transition"
-      >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-        </svg>
-        Login to view contact number
-      </button>
-    ) : (
-      
-       <a href={`tel:${room.phone_number}`}
-        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-green-500/10 border border-green-400/30 text-green-300 text-sm font-medium hover:bg-green-500/20 transition"
-      >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-        </svg>
-        {room.phone_number}
-      </a>
-    )}
-  </div>
-)}
-
-{showLoginPrompt && (
-            <div className="bg-blue-500/10 border border-blue-400/30 rounded-xl p-4 mb-4 text-center">
-              <p className="text-white text-sm mb-3">Booking ya chat karne ke liye login karna zaroori hai</p>
-              <div className="flex gap-2 justify-center">
-                <button onClick={() => navigate('/login')} className="px-4 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium transition">Log In</button>
-                <button onClick={() => navigate('/signup?role=student')} className="px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm hover:bg-white/20 transition">Sign Up</button>
+            <div className="space-y-2">
+              <h4 className="text-brand-gold font-bold text-[11px] uppercase tracking-wider">Available Amenities</h4>
+              <div className="flex flex-wrap gap-1.5">
+                {room.facilities.map((f) => (
+                  <span key={f} className="px-3 py-1 rounded-xl bg-slate-50 border border-slate-200/60 text-slate-600 text-xs font-semibold">
+                    {f}
+                  </span>
+                ))}
               </div>
             </div>
           )}
 
-          {bookingMsg && <p className="text-sm mb-3 p-2 rounded-lg bg-blue-500/10 text-blue-300">{bookingMsg}</p>}
+          {room.phone_number && (
+            <div className="space-y-2 pt-1">
+              <h4 className="text-brand-gold font-bold text-[11px] uppercase tracking-wider">Contact Details</h4>
+              {guestMode || !user ? (
+                <button
+                  onClick={requireLogin}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-500 text-xs font-bold uppercase tracking-wider hover:bg-slate-100 transition"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                  Login to view contact number
+                </button>
+              ) : (
+                <a href={`tel:${room.phone_number}`}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-brand-sage/5 border border-brand-sage/20 text-brand-sage text-xs font-black uppercase tracking-wider hover:bg-brand-sage/10 transition shadow-2xs"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  </svg>
+                  {room.phone_number}
+                </a>
+              )}
+            </div>
+          )}
 
-          <div className="flex flex-col sm:flex-row gap-3">
+          {showLoginPrompt && (
+            <div className="bg-brand-coral/5 border border-brand-coral/20 rounded-2xl p-4 text-center space-y-3 shadow-2xs">
+              <p className="text-slate-700 text-xs font-bold">Booking ya chat karne ke liye authentication zaroori hai</p>
+              <div className="flex gap-2 justify-center">
+                <button onClick={() => navigate('/login')} className="px-4 py-1.5 rounded-xl bg-brand-sage text-white text-xs font-bold uppercase tracking-wider shadow-2xs">Log In</button>
+                <button onClick={() => navigate('/signup?role=student')} className="px-4 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-wider shadow-2xs">Sign Up</button>
+              </div>
+            </div>
+          )}
+
+          {bookingMsg && (
+            <p className="text-xs font-bold p-3 rounded-xl bg-brand-sage/5 border border-brand-sage/20 text-brand-sage">
+              {bookingMsg}
+            </p>
+          )}
+
+          {/* Action Trigger Deck */}
+          <div className="flex flex-col sm:flex-row gap-3 pt-2">
             <button
               onClick={handleBook}
               disabled={booking || room.available_rooms === 0}
-              className="flex-1 py-3 rounded-xl bg-blue-500 hover:bg-blue-600 transition text-white font-semibold disabled:opacity-50"
+              className="flex-1 py-3 rounded-xl bg-brand-sage text-white text-xs font-black uppercase tracking-wider hover:opacity-95 transition disabled:opacity-40 active:scale-98 shadow-2xs"
             >
-              {room.available_rooms === 0 ? 'Fully Booked' : booking ? 'Booking...' : 'Book Now'}
+              {room.available_rooms === 0 ? 'Fully Booked' : booking ? 'Processing...' : 'Book Asset Now'}
             </button>
-            <button onClick={handleChat} className="px-6 py-3 rounded-xl bg-white/10 border border-white/20 text-white hover:bg-white/20 transition">💬 Chat</button>
+            <button 
+              onClick={handleChat} 
+              className="px-6 py-3 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-black uppercase tracking-wider hover:bg-slate-50 transition active:scale-98 shadow-2xs"
+            >
+              💬 Chat
+            </button>
           </div>
 
           {!guestMode && user && <RatingForm roomId={room.id} />}

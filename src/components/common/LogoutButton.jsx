@@ -22,7 +22,7 @@ export default function LogoutButton() {
           <div className="bg-slate-900/95 border border-white/20 rounded-2xl p-6 w-full max-w-sm text-center">
             <h3 className="text-white text-lg font-semibold mb-2">Log out?</h3>
             <p className="text-white/60 text-sm mb-6">
-              Kya aap sach mein logout karna chahte ho?
+              Are you sure you want to log out?
             </p>
             <div className="flex gap-3">
               <button

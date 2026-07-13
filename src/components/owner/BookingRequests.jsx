@@ -62,43 +62,61 @@ export default function BookingRequests({ refreshTrigger, onUpdated }) {
     }
   }
 
-  if (loading) return <p className="text-white/60">Loading booking requests...</p>
+  if (loading) {
+    return (
+      <p className="text-slate-400 font-bold text-xs tracking-wider animate-pulse py-4">
+        Loading pending requests...
+      </p>
+    )
+  }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 antialiased">
       {actionError && (
-        <p className="text-red-400 text-sm bg-red-500/10 p-2 rounded-lg">{actionError}</p>
+        <p className="text-brand-coral text-xs font-bold bg-brand-coral/10 p-3 rounded-xl border border-brand-coral/20">
+          {actionError}
+        </p>
       )}
 
       {bookings.length === 0 ? (
-        <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 text-white/60 text-center">
-          No pending booking requests at the moment.
-        </div>
+        // Converted from dark translucent to solid clean slate empty container
+       <div className="bg-[#fbe4c8] border border-orange-200 rounded-xl p-8 text-center">
+  <svg className="w-10 h-10 mx-auto mb-2 text-[#e8862e]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <rect x="3" y="5" width="18" height="16" rx="2" strokeWidth="2" />
+    <path strokeLinecap="round" strokeWidth="2" d="M3 10h18M8 3v4M16 3v4" />
+  </svg>
+  <p className="text-slate-500 text-xs font-semibold">No pending booking requests at the moment.</p>
+</div>
       ) : (
         bookings.map((booking) => (
-          <div
-            key={booking.id}
-            className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-          >
+          // Main dynamic card wrapper tracking minimal structural elevations
+        <div
+  key={booking.id}
+  className="bg-[#fbe4c8] border border-orange-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-orange-300 transition"
+>
             <div className="min-w-0">
-              <p className="text-white font-medium truncate">{booking.rooms?.title}</p>
-              <p className="text-white/60 text-sm truncate">
-                {booking.profiles?.full_name} {booking.profiles?.phone ? `· ${booking.profiles.phone}` : ''}
+              <p className="text-slate-800 font-black text-sm tracking-tight truncate">
+                {booking.rooms?.title}
               </p>
-              <p className="text-white/40 text-xs mt-1">
-                Requested on {new Date(booking.created_at).toLocaleDateString()}
+              <p className="text-slate-500 font-medium text-xs mt-0.5 truncate">
+                {booking.profiles?.full_name} {booking.profiles?.phone ? ` · ${booking.profiles.phone}` : ''}
+              </p>
+              <p className="text-slate-400 font-bold text-[10px] mt-1.5 uppercase tracking-wider">
+                Requested on {new Date(booking.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
               </p>
             </div>
-            <div className="flex gap-2">
+            
+            {/* Action Buttons refitted into the brand color tokens */}
+            <div className="flex gap-2 sm:flex-shrink-0">
               <button
                 onClick={() => handleAction(booking.id, 'confirmed')}
-                className="flex-1 sm:flex-none px-4 py-2 rounded-lg bg-green-500/20 text-green-300 text-sm font-medium hover:bg-green-500/30 transition"
+                className="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-brand-sage text-white text-xs font-bold hover:opacity-90 transition shadow-xs active:scale-95"
               >
                 Accept
               </button>
               <button
                 onClick={() => handleAction(booking.id, 'cancelled')}
-                className="flex-1 sm:flex-none px-4 py-2 rounded-lg bg-red-500/20 text-red-300 text-sm font-medium hover:bg-red-500/30 transition"
+                className="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-white border border-brand-coral/30 text-brand-coral text-xs font-bold hover:bg-brand-coral/5 transition active:scale-95"
               >
                 Reject
               </button>

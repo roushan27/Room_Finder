@@ -7,16 +7,17 @@ import NotificationBell from '../../components/common/NotificationBell'
 import ChatInbox from '../../components/common/ChatInbox'
 import Footer from '../../components/common/Footer'
 
+// Reconfigured Palette Matrix to match organic cream/sage/terracotta brand identity
 const ROLE_COLORS = {
-  student: '#3b82f6',
-  owner: '#f59e0b',
-  admin: '#10b981',
+  student: '#769F86', // Muted Sage Green
+  owner: '#C87A65',    // Soft Terracotta/Coral
+  admin: '#A67C52',    // Golden Brown
   unknown: '#94a3b8',
 }
 
 const BOOKING_COLORS = {
-  pending: '#f59e0b',
-  confirmed: '#10b981',
+  pending: '#C87A65',   // Terracotta Highlight
+  confirmed: '#769F86', // Sage Green Highlight
   cancelled: '#ef4444',
   unknown: '#94a3b8',
 }
@@ -152,25 +153,24 @@ export default function AdminDashboard() {
   const pendingBookings = bookings.filter((booking) => booking.status === 'pending').length
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 p-4 sm:p-6">
+    // Transform 1: Main background changed to Soft Cream White (#FDFBF7)
+    <div className="min-h-screen bg-[#fdeee0] p-4 sm:p-6 text-slate-800 font-sans antialiased">
+      
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 sm:mb-8">
+        {/* Transform 2: Glassmorphic heading replaced with pure white container & Golden-brown typography text */}
         <h1
-          className="text-xl sm:text-2xl font-bold text-white px-5 py-3 rounded-2xl inline-block"
-          style={{
-            background: 'linear-gradient(145deg, rgba(255,255,255,0.15), rgba(255,255,255,0.05))',
-            backdropFilter: 'blur(16px)',
-            border: '1px solid rgba(255,255,255,0.2)',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.1) inset, 0 4px 12px rgba(16,185,129,0.15)',
-          }}
+          className="text-xl sm:text-2xl font-bold text-[#A67C52] px-5 py-3 bg-white border border-slate-200/60 rounded-2xl inline-block shadow-sm"
         >
           Admin Panel - {profile?.full_name || 'Administrator'}
         </h1>
+        
+        {/* Navigation Elements Grid layout alignment */}
         <div className="flex flex-wrap gap-2 sm:gap-3 items-center">
           <ChatInbox />
           <NotificationBell />
           <button
             onClick={fetchAdminData}
-            className="px-4 py-2 rounded-xl bg-white/10 border border-white/20 text-white text-sm hover:bg-white/20 transition"
+            className="px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-600 text-sm hover:bg-slate-50 transition active:scale-95 shadow-xs font-semibold"
           >
             Refresh
           </button>
@@ -179,24 +179,27 @@ export default function AdminDashboard() {
       </div>
 
       {loading ? (
-        <p className="text-white/60">Loading admin data...</p>
+        <p className="text-slate-400 font-medium">Loading admin telemetry data...</p>
       ) : error ? (
-        <div className="rounded-2xl border border-red-400/30 bg-red-500/10 p-5 text-red-200">
+        <div className="rounded-2xl border border-orange-200 bg-orange-500/10 p-5 text-orange-800 font-semibold">
           {error}. Admin RLS policies must allow this account to read app tables.
         </div>
       ) : (
-        <div className="space-y-6 text-slate-200">
+        <div className="space-y-6">
+          
+          {/* Stat Cards Matrix Section */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <StatCard label="Total Users" value={users.length} />
-            <StatCard label="Owners" value={users.filter((user) => user.role === 'owner').length} accent="text-amber-300" />
-            <StatCard label="Students" value={users.filter((user) => user.role === 'student').length} accent="text-blue-300" />
-            <StatCard label="Rooms Listed" value={rooms.length} accent="text-emerald-300" />
+            <StatCard label="Owners" value={users.filter((user) => user.role === 'owner').length} accent="text-[#C87A65]" />
+            <StatCard label="Students" value={users.filter((user) => user.role === 'student').length} accent="text-[#769F86]" />
+            <StatCard label="Rooms Listed" value={rooms.length} accent="text-[#A67C52]" />
             <StatCard label="Active Rooms" value={rooms.filter((room) => room.is_active).length} />
-            <StatCard label="Bookings" value={bookings.length} accent="text-purple-300" />
-            <StatCard label="Pending Requests" value={pendingBookings} accent="text-yellow-300" />
-            <StatCard label="Messages" value={counts.messages} accent="text-cyan-300" />
+            <StatCard label="Bookings" value={bookings.length} accent="text-[#C87A65]" />
+            <StatCard label="Pending Requests" value={pendingBookings} accent="text-amber-600" />
+            <StatCard label="Messages" value={counts.messages} accent="text-[#769F86]" />
           </div>
 
+          {/* Core Analytics Panels Section */}
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
             <Panel title="User Roles">
               <ResponsiveContainer width="100%" height={260}>
@@ -207,7 +210,7 @@ export default function AdminDashboard() {
                     ))}
                   </Pie>
                   <Tooltip contentStyle={tooltipStyle} />
-                  <Legend />
+                  <Legend iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
                 </PieChart>
               </ResponsiveContainer>
             </Panel>
@@ -221,7 +224,7 @@ export default function AdminDashboard() {
                     ))}
                   </Pie>
                   <Tooltip contentStyle={tooltipStyle} />
-                  <Legend />
+                  <Legend iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
                 </PieChart>
               </ResponsiveContainer>
             </Panel>
@@ -236,17 +239,18 @@ export default function AdminDashboard() {
             </Panel>
           </div>
 
+          {/* Bar Charts Analytics Layer */}
           <Panel title="7 Day Activity">
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={activityData}>
-                <CartesianGrid stroke="rgba(255,255,255,0.08)" vertical={false} />
-                <XAxis dataKey="day" stroke="rgba(255,255,255,0.55)" />
-                <YAxis stroke="rgba(255,255,255,0.55)" allowDecimals={false} />
+                <CartesianGrid stroke="rgba(0,0,0,0.05)" vertical={false} />
+                <XAxis dataKey="day" stroke="rgba(0,0,0,0.4)" tick={{ fontSize: 11 }} />
+                <YAxis stroke="rgba(0,0,0,0.4)" allowDecimals={false} tick={{ fontSize: 11 }} />
                 <Tooltip contentStyle={tooltipStyle} />
-                <Legend />
-                <Bar dataKey="users" fill="#3b82f6" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="rooms" fill="#10b981" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="bookings" fill="#f59e0b" radius={[6, 6, 0, 0]} />
+                <Legend wrapperStyle={{ fontSize: '12px' }} />
+                <Bar dataKey="users" name="Users" fill="#769F86" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="rooms" name="Rooms" fill="#A67C52" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="bookings" name="Bookings" fill="#C87A65" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </Panel>
@@ -254,18 +258,19 @@ export default function AdminDashboard() {
           <Panel title="Owner Related Graph">
             <ResponsiveContainer width="100%" height={320}>
               <BarChart data={ownerStats.slice(0, 10)}>
-                <CartesianGrid stroke="rgba(255,255,255,0.08)" vertical={false} />
-                <XAxis dataKey="ownerName" stroke="rgba(255,255,255,0.55)" tick={{ fontSize: 11 }} />
-                <YAxis stroke="rgba(255,255,255,0.55)" allowDecimals={false} />
+                <CartesianGrid stroke="rgba(0,0,0,0.05)" vertical={false} />
+                <XAxis dataKey="ownerName" stroke="rgba(0,0,0,0.4)" tick={{ fontSize: 11 }} />
+                <YAxis stroke="rgba(0,0,0,0.4)" allowDecimals={false} tick={{ fontSize: 11 }} />
                 <Tooltip contentStyle={tooltipStyle} />
-                <Legend />
-                <Bar dataKey="rooms" name="Rooms" fill="#3b82f6" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="bookings" name="Bookings" fill="#f59e0b" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="availableRooms" name="Available" fill="#10b981" radius={[6, 6, 0, 0]} />
+                <Legend wrapperStyle={{ fontSize: '12px' }} />
+                <Bar dataKey="rooms" name="Rooms" fill="#769F86" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="bookings" name="Bookings" fill="#C87A65" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="availableRooms" name="Available" fill="#A67C52" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </Panel>
 
+          {/* Recent Records Layout Layer */}
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
             <Panel title="Recent Users">
               <DataTable
@@ -315,19 +320,20 @@ export default function AdminDashboard() {
   )
 }
 
-function StatCard({ label, value, accent = 'text-white' }) {
+// Subcomponents: Refactored strictly for White-card layouts with gray borders
+function StatCard({ label, value, accent = 'text-slate-700' }) {
   return (
-    <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-4 sm:p-5">
-      <p className="text-white/50 text-xs sm:text-sm">{label}</p>
-      <p className={`text-2xl sm:text-3xl font-bold mt-1 ${accent}`}>{value}</p>
+    <div className="bg-white border border-slate-200/70 rounded-2xl p-4 sm:p-5 shadow-xs">
+      <p className="text-slate-400 text-xs sm:text-sm font-medium">{label}</p>
+      <p className={`text-xl sm:text-2xl font-black mt-1 ${accent}`}>{value}</p>
     </div>
   )
 }
 
 function Panel({ title, children }) {
   return (
-    <section className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-4 sm:p-5">
-      <h2 className="text-base sm:text-lg font-semibold text-white mb-4">{title}</h2>
+    <section className="bg-white border border-slate-200/70 rounded-2xl p-4 sm:p-5 shadow-xs">
+      <h2 className="text-sm font-bold text-[#A67C52] uppercase tracking-wider mb-4">{title}</h2>
       {children}
     </section>
   )
@@ -335,33 +341,33 @@ function Panel({ title, children }) {
 
 function MetricRow({ label, value }) {
   return (
-    <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-3 last:border-b-0">
-      <span className="text-white/60 text-sm">{label}</span>
-      <span className="text-white font-semibold">{value}</span>
+    <div className="flex items-center justify-between gap-4 border-b border-slate-100 pb-3 last:border-b-0">
+      <span className="text-slate-500 text-sm font-medium">{label}</span>
+      <span className="text-slate-800 font-bold text-sm">{value}</span>
     </div>
   )
 }
 
 function DataTable({ columns, rows, emptyText }) {
   if (rows.length === 0) {
-    return <p className="text-white/40 text-sm">{emptyText}</p>
+    return <p className="text-slate-400 text-xs font-medium">{emptyText}</p>
   }
 
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[540px] text-left">
         <thead>
-          <tr className="border-b border-white/10 text-white/50 text-xs">
+          <tr className="border-b border-slate-200/80 text-slate-400 text-xs uppercase tracking-wider">
             {columns.map((column) => (
-              <th key={column} className="py-3 pr-4 font-medium">{column}</th>
+              <th key={column} className="pb-3 pr-4 font-bold">{column}</th>
             ))}
           </tr>
         </thead>
         <tbody>
           {rows.map((row, rowIndex) => (
-            <tr key={rowIndex} className="border-b border-white/5 text-sm text-white/80">
+            <tr key={rowIndex} className="border-b border-slate-100 last:border-b-0 text-xs font-medium text-slate-600 hover:bg-slate-50/50 transition-colors">
               {row.map((cell, cellIndex) => (
-                <td key={`${rowIndex}-${cellIndex}`} className="py-3 pr-4">{cell}</td>
+                <td key={`${rowIndex}-${cellIndex}`} className="py-3.5 pr-4">{cell}</td>
               ))}
             </tr>
           ))}
@@ -394,9 +400,13 @@ function formatDate(value) {
   return new Date(value).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
+// Reconfigured Tooltip Style to integrate seamlessly with the modern light palette
 const tooltipStyle = {
-  backgroundColor: 'rgba(15,23,42,0.95)',
-  border: '1px solid rgba(255,255,255,0.18)',
-  borderRadius: '10px',
-  color: 'white',
+  backgroundColor: '#ffffff',
+  border: '1px solid #e2e8f0',
+  borderRadius: '12px',
+  color: '#334155',
+  fontSize: '12px',
+  fontWeight: '600',
+  boxShadow: '0 4px 12px rgba(0,0,0,0.04)'
 }

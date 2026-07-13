@@ -29,81 +29,74 @@ export default function RoomCard({ room, onClick }) {
   return (
     <div
       onClick={() => onClick(room)}
-      className="group relative rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-1"
-      style={{
-        background: 'linear-gradient(145deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04))',
-        backdropFilter: 'blur(16px)',
-        border: '1px solid rgba(255,255,255,0.15)',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.25), 0 0 0 1px rgba(255,255,255,0.05) inset',
-      }}
+      className="group relative bg-white border border-orange-200/70 rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-orange-100 hover:border-orange-300 antialiased text-slate-800"
     >
-      <div
-        className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-        style={{
-          boxShadow: '0 0 0 1px rgba(59,130,246,0.5), 0 8px 40px rgba(59,130,246,0.35)',
-        }}
-      />
-
-      <div className="h-44 bg-white/5 relative overflow-hidden">
+      {/* Asset Media Frame */}
+      <div className="h-44 bg-slate-50 relative overflow-hidden">
         {room.photos?.[0] ? (
           <img
             src={room.photos[0]}
             alt={room.title}
             loading="lazy"
             decoding="async"
-            className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+            className="w-full h-full object-cover group-hover:scale-105 transition duration-500 ease-out"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-white/20 text-sm">
-            No photo available
+          <div className="w-full h-full flex items-center justify-center text-slate-400 font-bold text-[11px] uppercase tracking-wider bg-slate-50">
+            No Media Content
           </div>
         )}
 
         {room.avg_rating > 0 && (
-          <span className="absolute top-3 right-3 bg-black/60 backdrop-blur-sm text-yellow-400 text-xs font-semibold px-2 py-1 rounded-lg">
-            ⭐ {room.avg_rating.toFixed(1)}
+          <span className="absolute top-3 right-3 bg-white border border-slate-100 text-amber-500 text-[10px] font-black px-2 py-0.5 rounded-lg shadow-2xs flex items-center gap-1">
+            ★ {room.avg_rating.toFixed(1)}
           </span>
         )}
 
-        
-
         {room.room_type && (
-          <span className="absolute top-3 left-3 bg-purple-500/90 backdrop-blur-sm text-white text-xs font-semibold px-3 py-1 rounded-full shadow-lg">
+          <span className="absolute top-3 left-3 bg-brand-gold text-white text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg shadow-2xs">
             {room.room_type}
           </span>
         )}
       </div>
 
+      {/* Primary Details Matrix */}
       <div className="p-4 relative">
-        <div className="flex justify-between items-start gap-2">
-          <h3 className="text-white font-semibold text-lg truncate">{room.title}</h3>
-          <span className="text-blue-300 text-[10px] font-semibold whitespace-nowrap mt-1 bg-blue-500/10 px-2 py-0.5 rounded-full">{getTimeAgo()}</span>
+        <div className="flex justify-between items-start gap-3">
+          <h3 className="text-slate-800 font-black text-base truncate tracking-tight flex-1">
+            {room.title}
+          </h3>
+          <span className="text-brand-coral text-[9px] font-black uppercase tracking-wider whitespace-nowrap mt-0.5 bg-brand-coral/5 border border-brand-coral/10 px-2 py-0.5 rounded-md">
+            {getTimeAgo()}
+          </span>
         </div>
 
-       <div className="flex items-center gap-1.5 mt-2">
-  <svg className="w-3.5 h-3.5 text-blue-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-  </svg>
-  <span className="text-white/40 text-xs tracking-wide truncate">
-    {distance !== null ? formatDistance(distance) : locality ? `${locality} area` : room.city}
-  </span>
-</div>
-        
+        {/* Spatial Geolocation Metric Layout */}
+        <div className="flex items-center gap-1.5 mt-1.5">
+          <svg className="w-3.5 h-3.5 text-brand-sage flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <span className="text-slate-400 text-xs font-semibold tracking-wide truncate">
+            {distance !== null ? formatDistance(distance) : locality ? `${locality} area` : room.city}
+          </span>
+        </div>
 
-        <div className="flex justify-between items-center mt-3 pt-3 border-t border-white/10">
+        {/* Transaction & Inventory Split */}
+        <div className="flex justify-between items-center mt-4 pt-3 border-t border-slate-100">
           <div className="flex flex-col">
-            <span className="text-blue-300 font-medium text-sm">
-              {room.available_rooms > 0 ? `${room.available_rooms} rooms left` : 'Full'}
+            <span className={`text-[10px] font-black uppercase tracking-wider ${room.available_rooms > 0 ? 'text-brand-sage' : 'text-slate-400'}`}>
+              {room.available_rooms > 0 ? `${room.available_rooms} units left` : 'Fully Occupied'}
             </span>
-            <span className="text-green-300 text-xs font-medium mt-0.5">
-              ₹{room.price}/month
+            <span className="text-slate-900 font-black text-base mt-0.5 tracking-tight">
+              ₹{room.price.toLocaleString('en-IN')}<span className="text-slate-400 font-medium text-[11px]">/mo</span>
             </span>
           </div>
-          <span className="text-white/40 text-xs group-hover:text-blue-300 transition flex items-center gap-1">
-            View details
-            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          
+          <span className="text-slate-400 text-xs group-hover:text-brand-coral font-bold transition-all flex items-center gap-1 uppercase tracking-wider text-[10px]">
+            View
+            <svg className="w-3 h-3 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
             </svg>
           </span>
         </div>

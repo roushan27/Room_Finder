@@ -38,37 +38,43 @@ export default function LocationSearchBar({ compact = false }) {
   return (
     <div className={compact ? '' : 'mb-4'}>
       <form onSubmit={handleSearch} className="flex gap-2">
+        {/* Centralized Update: Alpha inputs converted to flat light borders with brand-sage focus */}
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search your location (e.g. college name, area)"
-          className="flex-1 px-4 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 text-sm focus:outline-none focus:border-blue-400"
+          className="flex-1 px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-800 placeholder-slate-400 text-xs focus:outline-none focus:border-brand-sage transition-all shadow-xs"
         />
+        
+        {/* Centralized Update: Button state mapped to brand-sage */}
         <button
           type="submit"
           disabled={searching}
-          className="px-4 py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium transition disabled:opacity-50"
+          className="px-5 py-2.5 rounded-xl bg-brand-sage hover:opacity-90 text-white text-xs font-bold transition disabled:opacity-50 shadow-md shadow-emerald-700/10 active:scale-98"
         >
           {searching ? '...' : 'Search'}
         </button>
+
+        {/* Location pinpoint button transformed to standard white control block */}
         <button
           type="button"
           onClick={useMyLocation}
           title="Use my current location"
-          className="px-3 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white hover:bg-white/20 transition"
+          className="px-3 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition active:scale-95 shadow-xs text-xs"
         >
           📍
         </button>
       </form>
 
+      {/* Suggestion Dropdown panel converted from deep slate-900 overlay to solid white elevation menu */}
       {results.length > 0 && (
-        <div className="mt-2 bg-slate-900/95 border border-white/20 rounded-xl overflow-hidden">
+        <div className="mt-2 bg-white border border-slate-200/80 rounded-xl overflow-hidden shadow-lg shadow-slate-200/50 relative z-20">
           {results.map((r, i) => (
             <button
               key={i}
               onClick={() => selectResult(r)}
-              className="w-full text-left px-4 py-2.5 text-white/80 text-sm hover:bg-white/10 transition border-b border-white/5 last:border-0"
+              className="w-full text-left px-4 py-2.5 text-slate-700 text-xs hover:bg-slate-50 transition border-b border-slate-100 last:border-0 font-medium"
             >
               {r.display_name}
             </button>
@@ -76,9 +82,10 @@ export default function LocationSearchBar({ compact = false }) {
         </div>
       )}
 
+      {/* Distance anchor target tracking pill text mapped to brand tokens */}
       {referenceLocation && (
-        <p className="text-white/40 text-xs mt-2">
-          📍 Distances shown from: <span className="text-blue-300">{referenceLocation.label}</span>
+        <p className="text-slate-400 font-semibold text-[11px] mt-2.5 flex items-center gap-1">
+          📍 Distances shown from: <span className="text-brand-coral hover:underline cursor-pointer">{referenceLocation.label}</span>
         </p>
       )}
     </div>
