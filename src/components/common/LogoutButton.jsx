@@ -10,7 +10,7 @@ export default function LogoutButton() {
       <button
         onClick={() => setShowConfirm(true)}
         title="Logout"
-        className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/10 border border-white/20 text-white hover:bg-red-500/20 hover:border-red-400/50 transition"
+        className="w-8 h-8 flex items-center justify-center rounded-xl bg-white/10 border border-white/20 text-white hover:bg-red-500/20 hover:border-red-400/50 transition"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />

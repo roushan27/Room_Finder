@@ -94,7 +94,7 @@ export default function NotificationBell() {
       {/* Centralized Update: Transformed alpha toggle trigger button to clean solid container */}
       <button
         onClick={handleToggle}
-        className="relative w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition shadow-xs outline-none active:scale-95"
+        className="relative w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition shadow-xs outline-none active:scale-95"
       >
         <span className="text-base sm:text-lg">🔔</span>
         {hasUnread && (
