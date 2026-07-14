@@ -24,7 +24,7 @@ export default function AddRoomForm({ onSuccess }) {
     category: 'PG', occupancy: 'Single', tenant_type: 'Students',
     phone_number: '',
   })
-  const [coords, setCoords] = useState({ lat: null, lng: null, address: '' })
+  const [coords, setCoords] = useState({ lat: null, lng: null, address: '',city: '' })
   const [facilities, setFacilities] = useState([])
   const [photos, setPhotos] = useState([])
   const [videos, setVideos] = useState([])
@@ -158,7 +158,7 @@ export default function AddRoomForm({ onSuccess }) {
         title: form.title,
         description: form.description,
         address: coords.address,
-        city: coords.address ? coords.address.split(',').slice(-3, -2)[0]?.trim() || 'Unknown' : 'Unknown',
+        city: coords.city || 'Unknown',
         price: parseFloat(form.price),
         total_rooms: parseInt(form.total_rooms),
         available_rooms: parseInt(form.available_rooms),
@@ -182,7 +182,7 @@ export default function AddRoomForm({ onSuccess }) {
       setTimeout(() => {
         sessionStorage.removeItem('addRoomDraft')
         setForm({ title: '', description: '', city: '', price: '', total_rooms: 1, available_rooms: 1, room_type: '1BHK', category: 'PG', occupancy: 'Single', tenant_type: 'Students', phone_number: '' })
-        setCoords({ lat: null, lng: null, address: '' })
+        setCoords({ lat: null, lng: null, address: '',city: '' })
         setFacilities([])
         setPhotos([])
         setVideos([])
@@ -339,7 +339,7 @@ export default function AddRoomForm({ onSuccess }) {
         <MapPicker
           latitude={coords.lat}
           longitude={coords.lng}
-          onChange={(lat, lng, address) => setCoords({ lat, lng, address })}
+          onChange={(lat, lng, address, city) => setCoords({ lat, lng, address, city })}
         />
       </Suspense>
 

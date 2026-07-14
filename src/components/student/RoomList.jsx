@@ -89,19 +89,19 @@ export default function RoomList({ guestMode = false, city }) {
   if (loading) {
     return (
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5 antialiased">
-        {[1, 2, 3, 4, 5, 6].map((i) => (
-          <div key={i} className="rounded-2xl overflow-hidden animate-pulse bg-white border border-orange-200/60 shadow-2xs">
-            <div className="h-44 bg-slate-100" />
-            <div className="p-4 space-y-3">
-              <div className="h-4 bg-slate-100 rounded-lg w-5/6" />
-              <div className="h-3 bg-slate-50 rounded-lg w-1/2" />
-              <div className="pt-2 flex justify-between">
-                <div className="h-3 bg-slate-100 rounded-lg w-1/3" />
-                <div className="h-3 bg-slate-100 rounded-lg w-1/4" />
-              </div>
-            </div>
-          </div>
-        ))}
+       {[1, 2, 3, 4, 5, 6].map((i) => (
+  <div key={i} className="rounded-2xl overflow-hidden animate-pulse bg-[#fef6ec] border border-orange-200/60 shadow-2xs">
+    <div className="h-44 bg-orange-100" />
+    <div className="p-4 space-y-3">
+      <div className="h-4 bg-orange-100/70 rounded-lg w-5/6" />
+      <div className="h-3 bg-orange-100/50 rounded-lg w-1/2" />
+      <div className="pt-2 flex justify-between">
+        <div className="h-3 bg-orange-100/70 rounded-lg w-1/3" />
+        <div className="h-3 bg-orange-100/70 rounded-lg w-1/4" />
+      </div>
+    </div>
+  </div>
+))}
       </div>
     )
   }

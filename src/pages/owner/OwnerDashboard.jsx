@@ -20,14 +20,15 @@ export default function OwnerDashboard() {
   const refreshBookings = () => setBookingsRefreshTrigger((prev) => prev + 1)
 
      return (
-    <div className="min-h-screen bg-[#fdeee0] antialiased text-slate-800">
+    <div className="min-h-screen bg-brand-cream antialiased text-slate-800">
       {/* Full-bleed gradient banner header */}
-      <div className="bg-gradient-to-r from-[#b5451a] to-[#e8792e] px-4 sm:px-6 py-5 sm:py-6">
+      <div className="bg-gradient-to-b from-[#e8792e] to-[#f4a565] px-4 sm:px-6 py-5 sm:py-6">
        <div className="max-w-7xl w-full mx-auto flex flex-row justify-between items-center gap-2">
   <div className="min-w-0">
-    <h1 className="text-base sm:text-2xl font-black text-white tracking-tight flex items-center gap-1 sm:gap-2 truncate">
-      <span className="truncate">Owner Panel</span> <span className="text-white/80 font-medium text-xs sm:text-base whitespace-nowrap">@{profile?.full_name || 'Host'}</span>
-    </h1>
+    <h1 className="text-base sm:text-2xl font-semibold text-white tracking-tight flex items-center gap-2 truncate">
+     <img src="/logo.png" alt="Room Finder" className="h-7 w-7 sm:h-9 sm:w-9 object-contain flex-shrink-0" />
+     <span className="truncate">Owner Panel</span> <span className="text-white/80 font-medium text-xs sm:text-base whitespace-nowrap">@{profile?.full_name || 'Host'}</span>
+   </h1>
     <p className="text-white/70 text-[9px] sm:text-[11px] font-bold uppercase tracking-wider mt-1 hidden sm:block">Manage listed inventories & localized asset leases</p>
   </div>
 
@@ -99,7 +100,7 @@ export default function OwnerDashboard() {
         />
       )}
 
-      <div className="mt-12 pt-4 border-t border-slate-200/60 max-w-7xl w-full mx-auto">
+      <div className="mt-12 max-w-7xl w-full mx-auto">
         <Footer />
       </div>
     </div>

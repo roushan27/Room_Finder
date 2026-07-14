@@ -10,13 +10,36 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 })
 
+// Nominatim ke structured address object se saaf city nikaalta hai —
+// comma-split guess ke bajaye
+function extractCity(address = {}) {
+  return (
+    address.city ||
+    address.town ||
+    address.village ||
+    address.municipality ||
+    address.county ||
+    address.state_district ||
+    address.state ||
+    'Unknown'
+  )
+}
+
 async function reverseGeocode(lat, lng) {
   try {
-    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`
+    )
     const data = await res.json()
-    return data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`
+    return {
+      display_name: data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`,
+      city: extractCity(data.address),
+    }
   } catch {
-    return `${lat.toFixed(5)}, ${lng.toFixed(5)}`
+    return {
+      display_name: `${lat.toFixed(5)}, ${lng.toFixed(5)}`,
+      city: 'Unknown',
+    }
   }
 }
 
@@ -49,18 +72,20 @@ export default function MapPicker({ latitude, longitude, onChange }) {
   )
 
   const handlePick = async (lat, lng) => {
-    setPosition([lat, lng])
-    setResolvedAddress('Locating address...')
-    const address = await reverseGeocode(lat, lng)
-    setResolvedAddress(address)
-    onChange(lat, lng, address)
-  }
+  setPosition([lat, lng])
+  setResolvedAddress('Locating address...')
+  const { display_name, city } = await reverseGeocode(lat, lng)
+  setResolvedAddress(display_name)
+  onChange(lat, lng, display_name, city)
+}
   
   const runSearch = async () => {
     if (!query.trim()) return
     setSearching(true)
     try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`)
+      const res = await fetch(
+  `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`
+)
       const data = await res.json()
       setResults(data)
     } catch {
@@ -77,14 +102,14 @@ export default function MapPicker({ latitude, longitude, onChange }) {
   }
 
   const selectResult = (r) => {
-    const lat = parseFloat(r.lat)
-    const lng = parseFloat(r.lon)
-    setPosition([lat, lng])
-    setResolvedAddress(r.display_name)
-    onChange(lat, lng, r.display_name)
-    setResults([])
-    setQuery('')
-  }
+  const lat = parseFloat(r.lat)
+  const lng = parseFloat(r.lon)
+  setPosition([lat, lng])
+  setResolvedAddress(r.display_name)
+  onChange(lat, lng, r.display_name, extractCity(r.address))
+  setResults([])
+  setQuery('')
+}
 
   const handleUseCurrentLocation = () => {
     if (!navigator.geolocation) {
@@ -96,14 +121,14 @@ export default function MapPicker({ latitude, longitude, onChange }) {
 
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
-        const lat = pos.coords.latitude
-        const lng = pos.coords.longitude
-        setPosition([lat, lng])
-        setResolvedAddress('Locating address...')
-        const address = await reverseGeocode(lat, lng)
-        setResolvedAddress(address)
-        onChange(lat, lng, address)
-        setLocating(false)
+    const lat = pos.coords.latitude
+    const lng = pos.coords.longitude
+    setPosition([lat, lng])
+    setResolvedAddress('Locating address...')
+    const { display_name, city } = await reverseGeocode(lat, lng)
+    setResolvedAddress(display_name)
+    onChange(lat, lng, display_name, city)
+    setLocating(false)
       },
       (err) => {
         setLocationError(

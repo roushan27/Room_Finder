@@ -33,10 +33,11 @@ export default function EditRoomModal({ room, onClose, onUpdated }) {
     phone_number: room.phone_number || '',
   })
   const [coords, setCoords] = useState({
-    lat: room.latitude || null,
-    lng: room.longitude || null,
-    address: room.address || '',
-  })
+  lat: room.latitude || null,
+  lng: room.longitude || null,
+  address: room.address || '',
+  city: room.city || '',
+})
   const [facilities, setFacilities] = useState(room.facilities || [])
   const [selectedPhotos, setSelectedPhotos] = useState([])
   const [saving, setSaving] = useState(false)
@@ -113,17 +114,14 @@ export default function EditRoomModal({ room, onClose, onUpdated }) {
         updatedPhotos = await uploadPhotos(selectedPhotos)
       }
 
-      const city = coords.address
-        ? coords.address.split(',').slice(-3, -2)[0]?.trim() || room.city || 'Unknown'
-        : room.city || 'Unknown'
-
+      const city = coords.city || room.city || 'Unknown'
       const { error } = await supabase
         .from('rooms')
         .update({
           title: form.title,
           description: form.description,
           address: coords.address,
-          city: coords.address ? coords.address.split(',').slice(-3, -2)[0]?.trim() || 'Unknown' : 'Unknown',
+          city,
           price: parseFloat(form.price),
           total_rooms: parseInt(form.total_rooms),
           available_rooms: parseInt(form.available_rooms),
@@ -312,7 +310,7 @@ export default function EditRoomModal({ room, onClose, onUpdated }) {
             <MapPicker
               latitude={coords.lat}
               longitude={coords.lng}
-              onChange={(lat, lng, address) => setCoords({ lat, lng, address })}
+               onChange={(lat, lng, address, city) => setCoords({ lat, lng, address, city })}
             />
           </Suspense>
 

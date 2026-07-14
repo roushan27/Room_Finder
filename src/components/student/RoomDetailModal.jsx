@@ -79,11 +79,11 @@ export default function RoomDetailModal({ room, onClose, guestMode = false }) {
 
   return (
     <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-end sm:items-center justify-center z-50 sm:p-4 antialiased text-slate-800">
-      <div className="bg-white border border-slate-200 rounded-t-3xl sm:rounded-2xl w-full max-w-2xl max-h-[92vh] sm:max-h-[90vh] overflow-y-auto shadow-2xl">
+      <div className="bg-brand-cream border border-orange-200/70 rounded-t-3xl sm:rounded-2xl w-full max-w-2xl max-h-[92vh] sm:max-h-[90vh] overflow-y-auto shadow-2xl">
         
         {/* Media Block Vault */}
         <div
-          className="relative h-60 sm:h-72 bg-slate-100 flex items-center justify-center overflow-hidden border-b border-slate-100"
+          className="relative h-60 sm:h-72 bg-orange-50 flex items-center justify-center overflow-hidden border-b border-orange-200/60"
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
           style={{ scrollBehavior: 'smooth' }}
@@ -92,7 +92,7 @@ export default function RoomDetailModal({ room, onClose, guestMode = false }) {
             activeMedia.type === 'photo' ? (
               <>
                 {!loadedImages[activeIdx] && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-slate-50 overflow-hidden">
+                   <div className="absolute inset-0 flex items-center justify-center bg-orange-50 overflow-hidden">
                     <div
                       className="absolute inset-0"
                       style={{
@@ -119,12 +119,12 @@ export default function RoomDetailModal({ room, onClose, guestMode = false }) {
             ) : (
               <button
                 onClick={() => setPlayingVideo(true)}
-                className="relative w-full h-full flex items-center justify-center bg-slate-50 group"
+                className="relative w-full h-full flex items-center justify-center bg-orange-50 group"
               >
                 <span className="absolute bottom-4 text-slate-400 font-bold text-[10px] uppercase tracking-wider">
                   Tap to load video content
                 </span>
-                <span className="w-14 h-14 rounded-full bg-white border border-slate-200 flex items-center justify-center text-xl text-brand-sage shadow-sm group-hover:scale-105 transition-transform pl-1">
+                <span className="w-14 h-14 rounded-full bg-white border border-orange-200 flex items-center justify-center text-xl text-brand-sage shadow-sm group-hover:scale-105 transition-transform pl-1">
                   ▶
                 </span>
               </button>
@@ -156,13 +156,13 @@ export default function RoomDetailModal({ room, onClose, guestMode = false }) {
 
         {/* Swipe Thumbnails Pipeline */}
         {mediaCount > 1 && (
-          <div className="flex gap-2 overflow-x-auto p-4 bg-slate-50 border-b border-slate-100 scroll-smooth">
+          <div className="flex gap-2 overflow-x-auto p-4 bg-orange-50 border-b border-orange-200/60 scroll-smooth">
             {mediaItems.map((item, i) => (
               <button
                 key={i}
                 onClick={() => goToIndex(i)}
                 className={`relative flex-shrink-0 w-14 h-14 rounded-xl overflow-hidden border-2 transition ${
-                  i === activeIdx ? 'border-brand-sage opacity-100' : 'border-slate-200 opacity-60 hover:opacity-90'
+                  i === activeIdx ? 'border-brand-sage opacity-100' : 'border-orange-200 opacity-60 hover:opacity-90'
                 }`}
               >
                 {item.type === 'photo' ? (
@@ -189,7 +189,7 @@ export default function RoomDetailModal({ room, onClose, guestMode = false }) {
             )}
           </div>
 
-          <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex justify-between items-center">
+          <div className="bg-[#faead2] border border-orange-200/60 rounded-2xl p-4 flex justify-between items-center">
             <div>
               <p className="text-brand-gold font-bold text-[10px] uppercase tracking-wider">Financial Assessment</p>
               <p className="text-xl font-black text-slate-900 mt-0.5 tracking-tight">
@@ -199,7 +199,7 @@ export default function RoomDetailModal({ room, onClose, guestMode = false }) {
             <div className="text-right">
               <p className="text-brand-gold font-bold text-[10px] uppercase tracking-wider">Availability</p>
               <p className="text-xs font-black text-brand-sage mt-1">
-                {room.available_rooms} of {room.total_rooms} units free
+                {room.available_rooms} of {room.total_rooms} Rooms free
               </p>
             </div>
           </div>
@@ -214,8 +214,8 @@ export default function RoomDetailModal({ room, onClose, guestMode = false }) {
           {/* Spatial Mapping Box */}
           <div className="space-y-2">
             <h4 className="text-brand-gold font-bold text-[11px] uppercase tracking-wider">Spatial Location</h4>
-            <Suspense fallback={<div className="bg-slate-50 border border-slate-200 rounded-2xl h-[220px] flex items-center justify-center text-slate-400 text-xs font-bold uppercase tracking-wider animate-pulse">Loading map viewport...</div>}>
-              <div className="rounded-2xl overflow-hidden border border-slate-200 shadow-2xs">
+            <Suspense fallback={<div className="bg-orange-50 border border-orange-200 rounded-2xl h-[220px] flex items-center justify-center text-slate-400 text-xs font-bold uppercase tracking-wider animate-pulse">Loading map viewport...</div>}>
+              <div className="rounded-2xl overflow-hidden border border-orange-200 shadow-2xs">
                 <RoomMapView room={room} />
               </div>
             </Suspense>
@@ -226,7 +226,7 @@ export default function RoomDetailModal({ room, onClose, guestMode = false }) {
               <h4 className="text-brand-gold font-bold text-[11px] uppercase tracking-wider">Available Amenities</h4>
               <div className="flex flex-wrap gap-1.5">
                 {room.facilities.map((f) => (
-                  <span key={f} className="px-3 py-1 rounded-xl bg-slate-50 border border-slate-200/60 text-slate-600 text-xs font-semibold">
+                  <span key={f} className="px-3 py-1 rounded-xl bg-white border border-orange-200/60 text-slate-600 text-xs font-semibold">
                     {f}
                   </span>
                 ))}
@@ -240,7 +240,7 @@ export default function RoomDetailModal({ room, onClose, guestMode = false }) {
               {guestMode || !user ? (
                 <button
                   onClick={requireLogin}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-500 text-xs font-bold uppercase tracking-wider hover:bg-slate-100 transition"
+                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-orange-200 text-slate-500 text-xs font-bold uppercase tracking-wider hover:bg-orange-50 transition"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -265,7 +265,7 @@ export default function RoomDetailModal({ room, onClose, guestMode = false }) {
               <p className="text-slate-700 text-xs font-bold">Booking ya chat karne ke liye authentication zaroori hai</p>
               <div className="flex gap-2 justify-center">
                 <button onClick={() => navigate('/login')} className="px-4 py-1.5 rounded-xl bg-brand-sage text-white text-xs font-bold uppercase tracking-wider shadow-2xs">Log In</button>
-                <button onClick={() => navigate('/signup?role=student')} className="px-4 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-wider shadow-2xs">Sign Up</button>
+                <button onClick={() => navigate('/signup?role=student')} className="px-4 py-1.5 rounded-xl bg-white border border-orange-200 text-slate-600 text-xs font-bold uppercase tracking-wider shadow-2xs">Sign Up</button>
               </div>
             </div>
           )}
@@ -287,7 +287,7 @@ export default function RoomDetailModal({ room, onClose, guestMode = false }) {
             </button>
             <button 
               onClick={handleChat} 
-              className="px-6 py-3 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-black uppercase tracking-wider hover:bg-slate-50 transition active:scale-98 shadow-2xs"
+              className="px-6 py-3 rounded-xl bg-white border border-orange-200 text-slate-700 text-xs font-black uppercase tracking-wider hover:bg-orange-50 transition active:scale-98 shadow-2xs"
             >
               💬 Chat
             </button>

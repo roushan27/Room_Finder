@@ -6,6 +6,7 @@ import LogoutButton from '../../components/common/LogoutButton'
 import NotificationBell from '../../components/common/NotificationBell'
 import ChatInbox from '../../components/common/ChatInbox'
 import Footer from '../../components/common/Footer'
+import ClearSessionButton from '../../components/ClearSessionButton'
 
 // Reconfigured Palette Matrix to match organic cream/sage/terracotta brand identity
 const ROLE_COLORS = {
@@ -175,6 +176,7 @@ export default function AdminDashboard() {
             Refresh
           </button>
           <LogoutButton />
+          <ClearSessionButton />
         </div>
       </div>
 

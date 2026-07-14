@@ -27,25 +27,25 @@ export default function RoomCard({ room, onClick }) {
   }
 
   return (
-    <div
-      onClick={() => onClick(room)}
-      className="group relative bg-white border border-orange-200/70 rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-orange-100 hover:border-orange-300 antialiased text-slate-800"
-    >
-      {/* Asset Media Frame */}
-      <div className="h-44 bg-slate-50 relative overflow-hidden">
-        {room.photos?.[0] ? (
-          <img
-            src={room.photos[0]}
-            alt={room.title}
-            loading="lazy"
-            decoding="async"
-            className="w-full h-full object-cover group-hover:scale-105 transition duration-500 ease-out"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-slate-400 font-bold text-[11px] uppercase tracking-wider bg-slate-50">
-            No Media Content
-          </div>
-        )}
+   <div
+  onClick={() => onClick(room)}
+  className="group relative bg-[#faead2] border border-orange-200/70 rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-orange-100 hover:border-orange-300 antialiased text-slate-800"
+>
+     {/* Asset Media Frame */}
+<div className="h-44 bg-orange-50 relative overflow-hidden">
+  {room.photos?.[0] ? (
+    <img
+      src={room.photos[0]}
+      alt={room.title}
+      loading="lazy"
+      decoding="async"
+      className="w-full h-full object-cover group-hover:scale-105 transition duration-500 ease-out"
+    />
+  ) : (
+    <div className="w-full h-full flex items-center justify-center text-slate-400 font-bold text-[11px] uppercase tracking-wider bg-orange-50">
+      No Media Content
+    </div>
+  )}
 
         {room.avg_rating > 0 && (
           <span className="absolute top-3 right-3 bg-white border border-slate-100 text-amber-500 text-[10px] font-black px-2 py-0.5 rounded-lg shadow-2xs flex items-center gap-1">
