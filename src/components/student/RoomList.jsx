@@ -6,7 +6,7 @@ import { useModalBackButton } from '../../hooks/useModalBackButton'
 
 const ROOM_TYPES = ['1BHK', '2BHK', 'Independent']
 
-export default function RoomList({ guestMode = false }) {
+export default function RoomList({ guestMode = false, city }) {
   const [rooms, setRooms] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -24,16 +24,18 @@ export default function RoomList({ guestMode = false }) {
 
   useModalBackButton(showFilters, () => setShowFilters(false))
 
-  useEffect(() => {
-    fetchRooms()
-  }, [])
-
   const fetchRooms = async () => {
     setLoading(true)
-    const { data, error } = await supabase
+    let query = supabase
       .from('rooms')
       .select('id, owner_id, title, description, address, city, price, total_rooms, available_rooms, room_type, facilities, photos, videos, avg_rating, total_ratings, latitude, longitude, created_at, is_active, phone_number, category, occupancy, tenant_type')
       .eq('is_active', true)
+
+    if (city) {
+      query = query.eq('city', city)
+    }
+
+    const { data, error } = await query
       .order('created_at', { ascending: false })
       .limit(500)
 
@@ -41,6 +43,10 @@ export default function RoomList({ guestMode = false }) {
     else setRooms(data)
     setLoading(false)
   }
+
+  useEffect(() => {
+    fetchRooms()
+  }, [city])
 
   const toggleDraftRoomType = (type) => {
     setDraftRoomTypes((prev) =>

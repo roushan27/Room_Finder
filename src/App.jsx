@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import RoomList from './components/student/RoomList'
 import { AuthProvider } from './context/AuthContext'
 import { LocationProvider } from './context/LocationContext'
 import BrowseRooms from './pages/BrowseRooms'
@@ -22,6 +23,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/ranchi" element={<RoomList city="Ranchi" />} />
 
             <Route
               path="/dashboard"
@@ -49,14 +51,15 @@ function App() {
                 </ProtectedRoute>
               }
             />
+
             <Route
-  path="/admin/dashboard"
-  element={
-    <ProtectedRoute allowedRole="admin">
-      <AdminDashboard />
-    </ProtectedRoute>
-  }
-/>
+              path="/admin/dashboard"
+              element={
+                <ProtectedRoute allowedRole="admin">
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
 
             <Route
               path="/chat/:roomId/:otherUserId"

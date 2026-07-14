@@ -123,7 +123,7 @@ export default function EditRoomModal({ room, onClose, onUpdated }) {
           title: form.title,
           description: form.description,
           address: coords.address,
-          city,
+          city: coords.address ? coords.address.split(',').slice(-3, -2)[0]?.trim() || 'Unknown' : 'Unknown',
           price: parseFloat(form.price),
           total_rooms: parseInt(form.total_rooms),
           available_rooms: parseInt(form.available_rooms),

@@ -130,7 +130,7 @@ export default function RoomDetailModal({ room, onClose, guestMode = false }) {
               </button>
             )
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-slate-400 font-bold text-xs uppercase tracking-wider">
+            <div className="w-full h-full flex items-center justify-center text-slate-400 font-medium text-xs uppercase tracking-wider">
               No Asset Media Available
             </div>
           )}
@@ -179,8 +179,8 @@ export default function RoomDetailModal({ room, onClose, guestMode = false }) {
         <div className="p-5 sm:p-7 space-y-5">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
             <div>
-              <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">{room.title}</h2>
-              <p className="text-slate-400 text-xs font-semibold tracking-wide mt-1 uppercase">{room.city}</p>
+             <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">{room.title}</h2>
+<p className="text-slate-400 text-xs font-medium tracking-wide mt-1 uppercase">{room.city}</p>
             </div>
             {room.avg_rating > 0 && (
               <span className="text-amber-500 font-black text-sm sm:text-base border border-amber-100 bg-amber-50/50 px-3 py-1 rounded-xl flex items-center gap-1.5 self-start">
