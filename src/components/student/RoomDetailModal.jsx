@@ -4,17 +4,19 @@ import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import RatingForm from './RatingForm'
 import { useModalBackButton } from '../../hooks/useModalBackButton'
+import { useToast } from '../../context/ToastContext'
+
 const RoomMapView = lazy(() => import('./RoomMapView'))
 
 export default function RoomDetailModal({ room, onClose, guestMode = false }) {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const { toast } = useToast()
   useModalBackButton(true, onClose)
   const [activeIdx, setActiveIdx] = useState(0)
   const [loadedImages, setLoadedImages] = useState({})
   const [playingVideo, setPlayingVideo] = useState(false)
   const [booking, setBooking] = useState(false)
-  const [bookingMsg, setBookingMsg] = useState('')
   const [showLoginPrompt, setShowLoginPrompt] = useState(false)
   const touchStartX = useRef(null)
 
@@ -33,7 +35,6 @@ export default function RoomDetailModal({ room, onClose, guestMode = false }) {
       return
     }
     setBooking(true)
-    setBookingMsg('')
 
     const { error } = await supabase.from('bookings').insert({
       room_id: room.id,
@@ -43,8 +44,8 @@ export default function RoomDetailModal({ room, onClose, guestMode = false }) {
       payment_status: 'unpaid',
     })
 
-    if (error) setBookingMsg('Error: ' + error.message)
-    else setBookingMsg('Booking request bhej di gayi! Owner confirm karega.')
+    if (error) toast.error('Error: ' + error.message)
+    else toast.success('Booking request bhej di gayi! Owner confirm karega.')
     setBooking(false)
   }
 
@@ -270,11 +271,7 @@ export default function RoomDetailModal({ room, onClose, guestMode = false }) {
             </div>
           )}
 
-          {bookingMsg && (
-            <p className="text-xs font-bold p-3 rounded-xl bg-brand-sage/5 border border-brand-sage/20 text-brand-sage">
-              {bookingMsg}
-            </p>
-          )}
+          
 
           {/* Action Trigger Deck */}
           <div className="flex flex-col sm:flex-row gap-3 pt-2">

@@ -2,6 +2,7 @@ import { useState, useEffect, lazy, Suspense } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import { compressImage } from '../../utils/imageCompress'
+import { useToast } from '../../context/ToastContext'
 
 const MapPicker = lazy(() => import('./MapPicker'))
 
@@ -18,6 +19,7 @@ const TENANT_TYPES = ['Students', 'Working Professionals', 'Families', 'Anyone']
 
 export default function AddRoomForm({ onSuccess }) {
   const { user } = useAuth()
+  const { toast } = useToast()
   const [form, setForm] = useState({
     title: '', description: '', city: '', price: '',
     total_rooms: 1, available_rooms: 1, room_type: '1BHK',
@@ -130,6 +132,14 @@ export default function AddRoomForm({ onSuccess }) {
       setError('Please select the room location on the map')
       return
     }
+    if (parseInt(form.available_rooms) > parseInt(form.total_rooms)) {
+      setError('Available rooms cannot be more than total rooms')
+      return
+    }
+     if (form.phone_number && !/^[6-9]\d{9}$/.test(form.phone_number.trim())) {
+    toast.error('Please enter a valid 10-digit phone number')
+     return
+    }
 
     setUploading(true)
     setUploadPercent(0)
@@ -175,7 +185,7 @@ export default function AddRoomForm({ onSuccess }) {
       })
 
       if (insertError) throw insertError
-
+      toast.success('Room listed successfully!')
       setUploadPercent(100)
       setUploadLabel('Done!')
 
@@ -193,6 +203,7 @@ export default function AddRoomForm({ onSuccess }) {
       }, 500)
     } catch (err) {
       setError(err.message)
+      toast.error(err.message)
       setUploading(false)
       setUploadPercent(0)
       setUploadLabel('')
@@ -435,7 +446,7 @@ export default function AddRoomForm({ onSuccess }) {
           type="tel"
           placeholder="+91 9876543210"
           value={form.phone_number}
-          onChange={handleChange}
+          onChange={(e) => setForm({ ...form, phone_number: e.target.value.replace(/\D/g, '').slice(0, 10) })}
           disabled={uploading}
           className="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-800 placeholder-slate-400 text-xs focus:outline-none focus:border-brand-sage transition-all shadow-xs"
         />

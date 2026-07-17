@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import ClearSessionButton from '../components/ClearSessionButton'
+import { useToast } from '../context/ToastContext'
 
 export default function Login() {
   const [identifier, setIdentifier] = useState('')
@@ -12,6 +13,7 @@ export default function Login() {
   const [selectedRole, setSelectedRole] = useState('student')
   const { signIn, signInWithGoogle } = useAuth()
   const navigate = useNavigate()
+  const { toast } = useToast()
 
   const handleLogin = async (e) => {
     e.preventDefault()
@@ -19,9 +21,10 @@ export default function Login() {
     setLoading(true)
     const { error } = await signIn(identifier, password, selectedRole)
     if (error) {
-      setError(error.message)
+      toast.error(error.message)
       setLoading(false)
     } else {
+      toast.success('Logged in successfully!')
       navigate('/dashboard')
     }
   }
@@ -31,7 +34,7 @@ export default function Login() {
     setError('')
     const { error } = await signInWithGoogle(selectedRole)
     if (error) {
-      setError(error.message)
+      toast.error(error.message)
       setGoogleLoading(false)
     }
   }
@@ -45,11 +48,7 @@ export default function Login() {
         <h2 className="text-xl font-black text-[#b5451a] mb-1 text-center">Log In</h2>
         <p className="text-center text-slate-500 font-medium text-xs mb-6">Choose how you want to continue</p>
 
-        {error && (
-          <p className="text-brand-coral text-xs font-bold mb-4 bg-brand-coral/10 p-3 rounded-xl border border-brand-coral/20">
-            {error}
-          </p>
-        )}
+        
 
         {/* Role Toggle */}
         <div className="mb-5 rounded-xl border border-orange-200 bg-white/50 p-1.5">

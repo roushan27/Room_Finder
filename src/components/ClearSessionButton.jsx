@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
-
+import { useToast } from '../context/ToastContext'
 export default function ClearSessionButton() {
   const [clearing, setClearing] = useState(false)
+  const { toast } = useToast()
 
   const handleClearSession = async () => {
     setClearing(true)
@@ -16,10 +17,13 @@ export default function ClearSessionButton() {
           localStorage.removeItem(key)
         }
       })
-
-      window.location.reload()
+      
+         toast.success('Session cleared. Reloading...')
+     setTimeout(() => window.location.reload(), 800)
+      
     } catch (err) {
       console.error('Session clear failed:', err)
+      toast.error('Could not clear session. Try again.')
       setClearing(false)
     }
   }

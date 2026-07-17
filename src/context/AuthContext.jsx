@@ -29,34 +29,45 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
+useEffect(() => {
+  let previousUserId = null
+
   supabase.auth.getSession().then(({ data: { session }, error }) => {
     if (error) {
-      // A transient refresh error shouldn't wipe out the saved session —
-      // just show no user for now; the SDK will retry on its own.
       console.warn('Session check failed (will retry):', error.message)
       setUser(null)
       setLoading(false)
       return
     }
+    previousUserId = session?.user?.id ?? null
     setUser(session?.user ?? null)
     if (session?.user) fetchProfile(session.user)
     else setLoading(false)
   })
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setLoading(true)
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        fetchProfile(session.user)
-      } else {
-        setProfile(null)
-        setLoading(false)
-      }
-    })
+  const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const newUserId = session?.user?.id ?? null
+    const isSameUser = newUserId === previousUserId
+    previousUserId = newUserId
 
-    return () => listener.subscription.unsubscribe()
-  }, [])
+    if (!isSameUser) {
+      setLoading(true)
+    }
+
+    setUser(session?.user ?? null)
+
+    if (session?.user && !isSameUser) {
+      fetchProfile(session.user)
+    } else if (session?.user && isSameUser) {
+      setLoading(false)
+    } else {
+      setProfile(null)
+      setLoading(false)
+    }
+  })
+
+  return () => listener.subscription.unsubscribe()
+}, [])
 
   const createProfileFromUser = async (authUser, fallbackRole = 'student') => {
     const metadata = authUser.user_metadata || {}

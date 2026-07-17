@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import { useModalBackButton } from '../../hooks/useModalBackButton'
 import { compressImage } from '../../utils/imageCompress'
+import { useToast } from '../../context/ToastContext'
 
 const MapPicker = lazy(() => import('./MapPicker'))
 
@@ -17,7 +18,8 @@ const CATEGORIES = ['PG', 'Hostel', 'Flat', 'House', 'Shared Room']
 const OCCUPANCY_OPTIONS = ['Single', 'Double', 'Triple', 'Any']
 const TENANT_TYPES = ['Students', 'Working Professionals', 'Families', 'Anyone']
 
-export default function EditRoomModal({ room, onClose, onUpdated }) {
+export default function EditRoomModal({ room, onClose, onUpdated }) { 
+  const { toast } = useToast()
   useModalBackButton(true, onClose)
   const { user } = useAuth()
   const [form, setForm] = useState({
@@ -106,7 +108,16 @@ export default function EditRoomModal({ room, onClose, onUpdated }) {
       setSaving(false)
       return
     }
-
+    if (parseInt(form.available_rooms) > parseInt(form.total_rooms)) {
+      setError('Available rooms cannot be more than total rooms')
+      setSaving(false)
+      return
+    }
+    if (form.phone_number && !/^[6-9]\d{9}$/.test(form.phone_number.trim())) {
+     toast.error('Please enter a valid 10-digit phone number')
+     setSaving(false)
+     return
+   }
     try {
       let updatedPhotos = room.photos || []
 
@@ -138,12 +149,14 @@ export default function EditRoomModal({ room, onClose, onUpdated }) {
         .eq('id', room.id)
 
       if (error) {
-        setError(error.message)
+        toast.error(error.message)
         setSaving(false)
         setUploadLabel('')
       } else {
         setUploadLabel('')
-        onUpdated()
+        toast.success('Room updated successfully!')
+        setSaving(false)
+        onUpdated() // Notify parent component about the update
         onClose()
       }
     } catch (err) {
@@ -369,7 +382,7 @@ export default function EditRoomModal({ room, onClose, onUpdated }) {
               type="tel"
               placeholder="+91 9876543210"
               value={form.phone_number}
-              onChange={handleChange}
+              onChange={(e) => setForm({ ...form, phone_number: e.target.value.replace(/\D/g, '').slice(0, 10) })}
               disabled={saving}
               className="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-800 placeholder-slate-400 text-xs focus:outline-none focus:border-brand-sage transition shadow-xs"
             />

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useToast } from '../context/ToastContext'
 
 export default function Signup() {
   const [searchParams] = useSearchParams()
@@ -17,14 +18,20 @@ export default function Signup() {
   const [success, setSuccess] = useState(false)
   const { signUp, signInWithGoogle } = useAuth()
   const navigate = useNavigate()
+  const { toast } = useToast()
 
   const handleSignup = async (e) => {
     e.preventDefault()
     setError('')
+    const phoneRegex = /^[6-9]\d{9}$/
+ if (phoneNumber && !phoneRegex.test(phoneNumber.trim())) {
+   toast.error('Please enter a valid 10-digit phone number')
+   return
+ }
     setLoading(true)
     const { error } = await signUp(email, password, fullName, role, phoneNumber)
     if (error) {
-      setError(error.message)
+       toast.error(error.message)
       setLoading(false)
     } else {
       setSuccess(true)
@@ -37,7 +44,7 @@ export default function Signup() {
     setError('')
     const { error } = await signInWithGoogle(role)
     if (error) {
-      setError(error.message)
+      toast.error(error.message)
       setGoogleLoading(false)
     }
   }
@@ -82,7 +89,7 @@ export default function Signup() {
         </div>
         <p className="text-brand-sage text-[10px] font-black mb-6 uppercase tracking-widest">Signing up as {role}</p>
 
-        {error && <p className="text-brand-coral text-xs font-bold mb-4 bg-white p-3 rounded-xl border border-brand-coral/20">{error}</p>}
+       
 
         <button type="button" onClick={handleGoogleSignup} className="w-full mb-4 py-3 rounded-xl bg-white text-slate-700 font-bold text-xs transition-all shadow-[3px_4px_8px_rgba(180,120,60,0.25),-2px_-2px_5px_rgba(255,255,255,0.7)] hover:shadow-[2px_3px_5px_rgba(180,120,60,0.25),-1px_-1px_3px_rgba(255,255,255,0.7)] active:shadow-[inset_2px_2px_5px_rgba(180,120,60,0.3)] active:scale-98">
           {googleLoading ? 'Connecting...' : 'Continue with Google'}
@@ -92,7 +99,13 @@ export default function Signup() {
 
         <input type="text" placeholder="Full Name" value={fullName} onChange={(e) => setFullName(e.target.value)} required className="w-full mb-3 px-4 py-3 rounded-xl bg-white text-xs focus:outline-none transition-all shadow-[inset_2px_2px_5px_rgba(180,120,60,0.2),inset_-2px_-2px_5px_rgba(255,255,255,0.7)] focus:shadow-[inset_2px_2px_5px_rgba(180,120,60,0.3),inset_-2px_-2px_5px_rgba(255,255,255,0.5)]" />
         <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full mb-3 px-4 py-3 rounded-xl bg-white text-xs focus:outline-none transition-all shadow-[inset_2px_2px_5px_rgba(180,120,60,0.2),inset_-2px_-2px_5px_rgba(255,255,255,0.7)] focus:shadow-[inset_2px_2px_5px_rgba(180,120,60,0.3),inset_-2px_-2px_5px_rgba(255,255,255,0.5)]" />
-        <input type="tel" placeholder="Phone Number" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} className="w-full mb-3 px-4 py-3 rounded-xl bg-white text-xs focus:outline-none transition-all shadow-[inset_2px_2px_5px_rgba(180,120,60,0.2),inset_-2px_-2px_5px_rgba(255,255,255,0.7)] focus:shadow-[inset_2px_2px_5px_rgba(180,120,60,0.3),inset_-2px_-2px_5px_rgba(255,255,255,0.5)]" />
+        <input 
+  type="tel" 
+  placeholder="Phone Number" 
+  value={phoneNumber} 
+  onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, '').slice(0, 10))} 
+  className="w-full mb-3 px-4 py-3 rounded-xl bg-white text-xs focus:outline-none transition-all shadow-[inset_2px_2px_5px_rgba(180,120,60,0.2),inset_-2px_-2px_5px_rgba(255,255,255,0.7)] focus:shadow-[inset_2px_2px_5px_rgba(180,120,60,0.3),inset_-2px_-2px_5px_rgba(255,255,255,0.5)]" 
+/>
         <input type="password" placeholder="Password (min 6 chars)" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} className="w-full mb-5 px-4 py-3 rounded-xl bg-white text-xs focus:outline-none transition-all shadow-[inset_2px_2px_5px_rgba(180,120,60,0.2),inset_-2px_-2px_5px_rgba(255,255,255,0.7)] focus:shadow-[inset_2px_2px_5px_rgba(180,120,60,0.3),inset_-2px_-2px_5px_rgba(255,255,255,0.5)]" />
         <button type="submit" disabled={loading} className="w-full py-4 rounded-xl bg-[#b5451a] text-white font-black text-sm transition-all shadow-[3px_4px_8px_rgba(60,20,5,0.4),-2px_-2px_5px_rgba(255,255,255,0.15)] hover:shadow-[2px_3px_5px_rgba(60,20,5,0.4),-1px_-1px_3px_rgba(255,255,255,0.15)] active:shadow-[inset_2px_2px_5px_rgba(60,20,5,0.45)] active:scale-98">
           {loading ? 'Creating...' : 'Sign Up'}

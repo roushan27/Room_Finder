@@ -3,24 +3,37 @@ import { supabase } from '../../lib/supabaseClient'
 import RoomCard from './RoomCard'
 import RoomDetailModal from './RoomDetailModal'
 import { useModalBackButton } from '../../hooks/useModalBackButton'
+import { useAuth } from '../../context/AuthContext'
 
 const ROOM_TYPES = ['1BHK', '2BHK', 'Independent']
-
+const SORT_OPTIONS = [
+   { key: 'newest', label: 'Newest First' },
+   { key: 'price_low', label: 'Price: Low to High' },
+   { key: 'price_high', label: 'Price: High to Low' },
+ ]
 export default function RoomList({ guestMode = false, city }) {
+  const { user } = useAuth()  
   const [rooms, setRooms] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [selectedRoom, setSelectedRoom] = useState(null)
   const [search, setSearch] = useState('')
   const [showFilters, setShowFilters] = useState(false)
+  const [favoriteIds, setFavoriteIds] = useState(new Set())
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
 
   const [appliedRoomTypes, setAppliedRoomTypes] = useState([])
   const [appliedMinPrice, setAppliedMinPrice] = useState(0)
   const [appliedMaxPrice, setAppliedMaxPrice] = useState(30000)
-
+  const [appliedCity, setAppliedCity] = useState('') 
+  const [sortBy, setSortBy] = useState('newest')
+   
+  const [showSortMenu, setShowSortMenu] = useState(false)
   const [draftRoomTypes, setDraftRoomTypes] = useState([])
   const [draftMinPrice, setDraftMinPrice] = useState(0)
   const [draftMaxPrice, setDraftMaxPrice] = useState(30000)
+   const [draftCity, setDraftCity] = useState('')
+   const [availableCities, setAvailableCities] = useState([])
 
   useModalBackButton(showFilters, () => setShowFilters(false))
 
@@ -40,24 +53,42 @@ export default function RoomList({ guestMode = false, city }) {
       .limit(500)
 
     if (error) setError(error.message)
-    else setRooms(data)
+    else {
+   setRooms(data)
+   const uniqueCities = [...new Set(data.map((r) => r.city).filter(Boolean))].sort()
+   setAvailableCities(uniqueCities)
+ }
     setLoading(false)
   }
-
+ const fetchFavorites = async () => {
+    if (!user?.id) return
+    const { data } = await supabase.from('favorites').select('room_id').eq('student_id', user.id)
+    if (data) setFavoriteIds(new Set(data.map((f) => f.room_id)))
+  }
   useEffect(() => {
     fetchRooms()
-  }, [city])
+    fetchFavorites()
+  }, [city, user?.id])
 
   const toggleDraftRoomType = (type) => {
     setDraftRoomTypes((prev) =>
       prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
     )
   }
+  const handleFavoriteChange = (roomId, isFavorited) => {
+    setFavoriteIds((prev) => {
+      const next = new Set(prev)
+      if (isFavorited) next.add(roomId)
+      else next.delete(roomId)
+      return next
+    })
+  }
 
   const openFilters = () => {
     setDraftRoomTypes(appliedRoomTypes)
     setDraftMinPrice(appliedMinPrice)
     setDraftMaxPrice(appliedMaxPrice)
+    setDraftCity(appliedCity)
     setShowFilters(true)
   }
 
@@ -65,6 +96,7 @@ export default function RoomList({ guestMode = false, city }) {
     setAppliedRoomTypes(draftRoomTypes)
     setAppliedMinPrice(draftMinPrice)
     setAppliedMaxPrice(draftMaxPrice)
+    setAppliedCity(draftCity)
     setShowFilters(false)
   }
 
@@ -72,6 +104,7 @@ export default function RoomList({ guestMode = false, city }) {
     setDraftRoomTypes([])
     setDraftMinPrice(0)
     setDraftMaxPrice(30000)
+    setDraftCity('')
   }
 
   const filteredRooms = rooms.filter((r) => {
@@ -80,18 +113,25 @@ export default function RoomList({ guestMode = false, city }) {
       r.city.toLowerCase().includes(search.toLowerCase())
     const matchesType = appliedRoomTypes.length === 0 || appliedRoomTypes.includes(r.room_type)
     const matchesPrice = r.price >= appliedMinPrice && r.price <= appliedMaxPrice
-    return matchesSearch && matchesType && matchesPrice
+    const matchesFavorite = !showFavoritesOnly || favoriteIds.has(r.id)
+    const matchesCity = !appliedCity || r.city === appliedCity
+    return matchesSearch && matchesType && matchesPrice && matchesFavorite && matchesCity
   })
-
+ const sortedRooms = [...filteredRooms].sort((a, b) => {
+   if (sortBy === 'price_low') return a.price - b.price
+   if (sortBy === 'price_high') return b.price - a.price
+   if (sortBy === 'newest') return new Date(b.created_at) - new Date(a.created_at)
+   return 0
+ })
   const activeFilterCount =
-    appliedRoomTypes.length + (appliedMinPrice > 0 || appliedMaxPrice < 30000 ? 1 : 0)
+     appliedRoomTypes.length + (appliedMinPrice > 0 || appliedMaxPrice < 30000 ? 1 : 0) + (appliedCity ? 1 : 0)
 
   if (loading) {
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5 antialiased">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4 antialiased">
        {[1, 2, 3, 4, 5, 6].map((i) => (
   <div key={i} className="rounded-2xl overflow-hidden animate-pulse bg-[#fef6ec] border border-orange-200/60 shadow-2xs">
-    <div className="h-44 bg-orange-100" />
+    <div className="h-36 sm:h-44 bg-orange-100" />
     <div className="p-4 space-y-3">
       <div className="h-4 bg-orange-100/70 rounded-lg w-5/6" />
       <div className="h-3 bg-orange-100/50 rounded-lg w-1/2" />
@@ -111,36 +151,93 @@ export default function RoomList({ guestMode = false, city }) {
   return (
     <div className="antialiased text-slate-800">
       
-      {/* Control Navigation Center */}
-      <div className="mb-5 flex items-center justify-between gap-3">
-       <button
-  onClick={openFilters}
-  className="relative flex-shrink-0 flex items-center justify-center w-11 h-11 rounded-xl bg-white border border-orange-200 text-[#b5451a] hover:bg-orange-50 transition active:scale-95 shadow-2xs"
-  aria-label="Open filters"
->
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 4h18M6 4v3m0 0a2 2 0 100 4 2 2 0 000-4zM6 11v9M12 4v9m0 0a2 2 0 100 4 2 2 0 000-4zm0 4v3M18 4v3m0 0a2 2 0 100 4 2 2 0 000-4zm0 4v9" />
-          </svg>
-          {activeFilterCount > 0 && (
-            <span className="absolute -top-1.5 -right-1.5 w-5 h-5 flex items-center justify-center bg-brand-coral text-white text-[9px] font-black rounded-full shadow-xs border-2 border-white">
-              {activeFilterCount}
-            </span>
-          )}
-        </button>
+   <div className="mb-5 flex items-center gap-2 sm:gap-3">
+  {/* Filter + Sort — ek grouped pill mein */}
+  <div className="flex items-center gap-1 bg-white border border-orange-200 rounded-xl p-1 shadow-2xs flex-shrink-0">
+    <button
+      onClick={openFilters}
+      className="relative flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-lg text-[#b5451a] hover:bg-orange-50 transition active:scale-95"
+      aria-label="Open filters"
+    >
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 4h18M6 4v3m0 0a2 2 0 100 4 2 2 0 000-4zM6 11v9M12 4v9m0 0a2 2 0 100 4 2 2 0 000-4zm0 4v3M18 4v3m0 0a2 2 0 100 4 2 2 0 000-4zm0 4v9" />
+      </svg>
+      {activeFilterCount > 0 && (
+        <span className="absolute -top-1 -right-1 w-4.5 h-4.5 flex items-center justify-center bg-brand-coral text-white text-[9px] font-black rounded-full shadow-xs border-2 border-white">
+          {activeFilterCount}
+        </span>
+      )}
+    </button>
 
-        <div className="relative flex-1 max-w-xs">
-          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-xs z-10">🔍</span>
-         <input
-  type="text"
-  placeholder="Search localized area or key parameters..."
-  value={search}
-  onChange={(e) => setSearch(e.target.value)}
-  className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-white border border-orange-200 text-slate-800 placeholder-slate-400 text-xs font-medium focus:outline-none focus:border-[#e8792e] transition-all shadow-2xs"
-/>
-        </div>
-      </div>
+    <div className="w-px h-6 bg-orange-100" />
 
-      {/* Side View Overlay Filter Block */}
+    <div className="relative">
+      <button
+        onClick={() => setShowSortMenu((prev) => !prev)}
+        className="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-lg text-[#b5451a] hover:bg-orange-50 transition active:scale-95"
+        aria-label="Sort options"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 7h10M3 12h6M3 17h3M17 4v13m0 0l-4-4m4 4l4-4" />
+        </svg>
+      </button>
+
+      {showSortMenu && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setShowSortMenu(false)} />
+          <div className="absolute top-full left-0 mt-2 bg-white border border-orange-200 rounded-xl shadow-lg overflow-hidden z-50 w-44">
+            {SORT_OPTIONS.map((opt) => (
+              <button
+                key={opt.key}
+                onClick={() => {
+                  setSortBy(opt.key)
+                  setShowSortMenu(false)
+                }}
+                className={`w-full text-left px-4 py-2.5 text-xs font-bold transition ${
+                  sortBy === opt.key
+                    ? 'bg-brand-sage/10 text-brand-sage'
+                    : 'text-slate-600 hover:bg-orange-50'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  </div>
+
+  {/* Favorites — alag standalone button */}
+  {!guestMode && (
+    <button
+      onClick={() => setShowFavoritesOnly((prev) => !prev)}
+      className={`flex-shrink-0 flex items-center justify-center w-11 h-11 rounded-xl border transition active:scale-95 shadow-2xs ${
+        showFavoritesOnly
+          ? 'bg-brand-coral border-brand-coral text-white'
+          : 'bg-white border-orange-200 text-brand-coral hover:bg-orange-50'
+      }`}
+      aria-label="Show favorites only"
+    >
+      <svg className="w-4 h-4" fill={showFavoritesOnly ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+      </svg>
+    </button>
+  )}
+
+  <div className="relative flex-1">
+    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-xs z-10">🔍</span>
+    <input
+      type="text"
+      placeholder="Search localized area or key parameters..."
+      value={search}
+      onChange={(e) => setSearch(e.target.value)}
+      className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-white border border-orange-200 text-slate-800 placeholder-slate-400 text-xs font-medium focus:outline-none focus:border-[#e8792e] transition-all shadow-2xs"
+    />
+  </div>
+</div>
+
+    
       {showFilters && (
         <div
           className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4"
@@ -159,7 +256,36 @@ export default function RoomList({ guestMode = false, city }) {
                 ✕
               </button>
             </div>
-
+           {availableCities.length > 0 && (
+   <div>
+     <p className="text-slate-400 text-[10px] uppercase tracking-wider font-bold mb-3">City</p>
+     <div className="flex flex-wrap gap-2">
+       <button
+         onClick={() => setDraftCity('')}
+         className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all active:scale-95 uppercase tracking-wider text-[10px] ${
+           draftCity === ''
+             ? 'bg-brand-sage border-brand-sage text-white shadow-xs'
+             : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+         }`}
+       >
+         All Cities
+       </button>
+       {availableCities.map((c) => (
+         <button
+           key={c}
+           onClick={() => setDraftCity(c)}
+           className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all active:scale-95 uppercase tracking-wider text-[10px] ${
+             draftCity === c
+               ? 'bg-brand-sage border-brand-sage text-white shadow-xs'
+               : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+           }`}
+         >
+           {c}
+         </button>
+       ))}
+     </div>
+   </div>
+ )}
             <div>
               <p className="text-slate-400 text-[10px] uppercase tracking-wider font-bold mb-3">Structural Class</p>
               <div className="flex flex-wrap gap-2">
@@ -250,9 +376,13 @@ export default function RoomList({ guestMode = false, city }) {
   No assets match the specified parameters.
 </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
-          {filteredRooms.map((room) => (
-            <RoomCard key={room.id} room={room} onClick={setSelectedRoom} />
+       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4">
+          {sortedRooms.map((room) => (
+            <RoomCard key={room.id} room={room} onClick={setSelectedRoom} 
+            guestMode={guestMode}
+ isFavorited={favoriteIds.has(room.id)}
+ onFavoriteChange={handleFavoriteChange}
+            />
           ))}
         </div>
       )}

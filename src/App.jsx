@@ -12,12 +12,14 @@ import OwnerDashboard from './pages/owner/OwnerDashboard'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import ChatPage from './pages/ChatPage'
 import ProtectedRoute from './components/common/ProtectedRoute'
-
+import MyBookings from './pages/student/MyBookings'
+import { ToastProvider } from './context/ToastContext'
 function App() {
   return (
     <AuthProvider>
       <LocationProvider>
-        <BrowserRouter>
+        <ToastProvider>
+          <BrowserRouter>
           <Routes>
             <Route path="/" element={<BrowseRooms />} />
             <Route path="/login" element={<Login />} />
@@ -39,6 +41,14 @@ function App() {
               element={
                 <ProtectedRoute allowedRole="student">
                   <StudentDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/student/bookings"
+              element={
+                <ProtectedRoute allowedRole="student">
+                  <MyBookings />
                 </ProtectedRoute>
               }
             />
@@ -71,6 +81,7 @@ function App() {
             />
           </Routes>
         </BrowserRouter>
+        </ToastProvider>
       </LocationProvider>
     </AuthProvider>
   )
