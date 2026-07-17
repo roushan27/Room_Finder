@@ -111,11 +111,12 @@ export default function RoomCard({ room, onClick, guestMode = false, isFavorited
             {room.title}
           </h3>
           {room.avg_rating > 0 && (
-            <span className="flex items-center gap-1 text-slate-800 text-sm flex-shrink-0">
-              <svg className="w-3.5 h-3.5 fill-slate-800" viewBox="0 0 24 24">
+            <span className="flex items-center gap-1 text-amber-600 text-sm font-semibold flex-shrink-0">
+              <svg className="w-3.5 h-3.5 fill-amber-500" viewBox="0 0 24 24">
+              
                 <path d="M12 2l2.9 6.6 7.1.6-5.4 4.7 1.6 7-6.2-3.8-6.2 3.8 1.6-7L2 9.2l7.1-.6z" />
               </svg>
-              {room.avg_rating.toFixed(2)}
+              {Number(room.avg_rating.toFixed(1)).toString()}
             </span>
           )}
         </div>

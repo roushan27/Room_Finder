@@ -1,16 +1,16 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
+import { useToast } from '../../context/ToastContext'
 
 export default function RatingForm({ roomId, onSubmitted }) {
   const { user } = useAuth()
+  const { toast } = useToast()
   const [rating, setRating] = useState(0)
   const [hoverRating, setHoverRating] = useState(0)
   const [comment, setComment] = useState('')
   const [existingRating, setExistingRating] = useState(null)
   const [saving, setSaving] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState(false)
 
   useEffect(() => {
     checkExistingRating()
@@ -27,17 +27,17 @@ export default function RatingForm({ roomId, onSubmitted }) {
     if (data) {
       setExistingRating(data)
       setRating(data.rating)
+      setComment(data.comment || '')
     }
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (rating === 0) {
-      setError('Please select a star rating allocation')
+      toast.error('Please select a star rating')
       return
     }
     setSaving(true)
-    setError('')
 
     const { error } = await supabase.from('ratings').upsert(
       {
@@ -50,38 +50,26 @@ export default function RatingForm({ roomId, onSubmitted }) {
     )
 
     if (error) {
-      setError(error.message)
+      toast.error(error.message)
       setSaving(false)
       return
     }
 
-    setComment('')
-    setSuccess(true)
+    toast.success(existingRating ? 'Review updated!' : 'Thanks for your review!')
     setSaving(false)
-
+     setRating(0)
+ setComment('')
+ setExistingRating(null)
     if (onSubmitted) onSubmitted()
-
-    setTimeout(() => setSuccess(false), 3000)
   }
 
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl p-5 mt-4 shadow-2xs antialiased text-slate-800">
+    <div className="bg-white border border-orange-200/70 rounded-2xl p-5 mt-4 shadow-2xs antialiased text-slate-800">
       <h4 className="text-brand-gold font-bold text-[11px] uppercase tracking-wider mb-3">
-        {existingRating ? 'Modify Asset Evaluation' : 'Submit Room Rating Feedback'}
+        {existingRating ? 'Update Your Review' : 'Rate This Room'}
       </h4>
 
-      {error && (
-        <p className="text-brand-coral text-xs font-bold mb-2 bg-brand-coral/5 border border-brand-coral/20 px-3 py-2 rounded-xl">
-          ⚠ {error}
-        </p>
-      )}
-      {success && (
-        <p className="text-brand-sage text-xs font-bold mb-2 bg-brand-sage/5 border border-brand-sage/20 px-3 py-2 rounded-xl">
-          Feedback logged successfully! ✅
-        </p>
-      )}
-
-      {/* Interactive Star Cluster Matrix */}
+      {/* Interactive Star Cluster */}
       <div className="flex gap-1.5 mb-4">
         {[1, 2, 3, 4, 5].map((star) => (
           <button
@@ -90,10 +78,10 @@ export default function RatingForm({ roomId, onSubmitted }) {
             onClick={() => setRating(star)}
             onMouseEnter={() => setHoverRating(star)}
             onMouseLeave={() => setHoverRating(0)}
-            className="text-2xl transition-all duration-150 transform hover:scale-110 focus:outline-none filter saturate-120"
+            className="text-2xl transition-all duration-150 transform hover:scale-110 focus:outline-none"
           >
             {star <= (hoverRating || rating) ? (
-              <span className="text-amber-400 drop-shadow-3xs">★</span>
+              <span className="text-amber-400 drop-shadow-[0_1px_2px_rgba(245,158,11,0.3)]">★</span>
             ) : (
               <span className="text-slate-200 hover:text-slate-300">☆</span>
             )}
@@ -104,17 +92,17 @@ export default function RatingForm({ roomId, onSubmitted }) {
       <textarea
         value={comment}
         onChange={(e) => setComment(e.target.value)}
-        placeholder="Provide optional qualitative details regarding your experience..."
+        placeholder="Share your experience with this room..."
         rows={2}
-        className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 text-xs font-medium focus:outline-none focus:border-brand-sage transition mb-3 shadow-inner"
+        className="w-full px-3 py-2.5 rounded-xl bg-orange-50/50 text-slate-800 placeholder-slate-400 text-xs font-medium focus:outline-none transition mb-3 shadow-[inset_2px_2px_5px_rgba(180,120,60,0.15),inset_-2px_-2px_5px_rgba(255,255,255,0.7)] focus:shadow-[inset_2px_2px_5px_rgba(180,120,60,0.25),inset_-2px_-2px_5px_rgba(255,255,255,0.5)]"
       />
 
       <button
         onClick={handleSubmit}
         disabled={saving}
-        className="w-full sm:w-auto px-5 py-2 rounded-xl bg-brand-sage text-white text-xs font-bold hover:opacity-90 transition disabled:opacity-50 active:scale-95 shadow-2xs uppercase tracking-wider"
+        className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-brand-sage text-white text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50 active:scale-95 shadow-[3px_4px_8px_rgba(20,60,30,0.3),-2px_-2px_5px_rgba(255,255,255,0.2)] hover:shadow-[2px_3px_5px_rgba(20,60,30,0.3),-1px_-1px_3px_rgba(255,255,255,0.2)]"
       >
-        {saving ? 'Processing...' : existingRating ? 'Update Rating Matrix' : 'Post Evaluation'}
+        {saving ? 'Submitting...' : existingRating ? 'Update Review' : 'Submit Review'}
       </button>
     </div>
   )

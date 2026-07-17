@@ -1,10 +1,11 @@
-import { useState, useRef, lazy, Suspense } from 'react'
+import { useState, useRef, useEffect, lazy, Suspense } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import RatingForm from './RatingForm'
 import { useModalBackButton } from '../../hooks/useModalBackButton'
 import { useToast } from '../../context/ToastContext'
+import ReviewsList from './ReviewsList'
 
 const RoomMapView = lazy(() => import('./RoomMapView'))
 
@@ -18,6 +19,8 @@ export default function RoomDetailModal({ room, onClose, guestMode = false }) {
   const [playingVideo, setPlayingVideo] = useState(false)
   const [booking, setBooking] = useState(false)
   const [showLoginPrompt, setShowLoginPrompt] = useState(false)
+  const [showShareMenu, setShowShareMenu] = useState(false)
+   const [ownerInfo, setOwnerInfo] = useState(null)
   const touchStartX = useRef(null)
 
   const requireLogin = () => setShowLoginPrompt(true)
@@ -35,7 +38,24 @@ export default function RoomDetailModal({ room, onClose, guestMode = false }) {
       return
     }
     setBooking(true)
+   useEffect(() => {
+  const fetchOwnerInfo = async () => {
+    const [profileResult, roomsCountResult] = await Promise.all([
+      supabase.from('profiles').select('full_name, created_at').eq('id', room.owner_id).single(),
+      supabase.from('rooms').select('id', { count: 'exact', head: true }).eq('owner_id', room.owner_id).eq('is_active', true),
+    ])
 
+    if (profileResult.data) {
+      setOwnerInfo({
+        name: profileResult.data.full_name,
+        memberSince: profileResult.data.created_at,
+        listingsCount: roomsCountResult.count || 0,
+      })
+    }
+  }
+
+  fetchOwnerInfo()
+}, [room.owner_id])
     const { error } = await supabase.from('bookings').insert({
       room_id: room.id,
       student_id: user.id,
@@ -56,6 +76,39 @@ export default function RoomDetailModal({ room, onClose, guestMode = false }) {
     }
     navigate(`/chat/${room.id}/${room.owner_id}`)
   }
+
+  const getShareUrl = () => `${window.location.origin}${window.location.pathname}?room=${room.id}`
+
+const getShareText = () => `Check out this room: ${room.title} — ₹${room.price.toLocaleString('en-IN')}/month in ${room.city}`
+
+const handleNativeShare = async () => {
+  const shareUrl = getShareUrl()
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: room.title, text: getShareText(), url: shareUrl })
+    } catch {
+      // user cancelled — no action needed
+    }
+  } else {
+    setShowShareMenu((prev) => !prev)
+  }
+}
+
+const handleWhatsAppShare = () => {
+  const text = encodeURIComponent(`${getShareText()}\n${getShareUrl()}`)
+  window.open(`https://wa.me/?text=${text}`, '_blank')
+  setShowShareMenu(false)
+}
+
+const handleCopyLink = async () => {
+  try {
+    await navigator.clipboard.writeText(getShareUrl())
+    toast.success('Link copied to clipboard!')
+  } catch {
+    toast.error('Could not copy link')
+  }
+  setShowShareMenu(false)
+}
 
   const goToIndex = (idx) => {
     setActiveIdx(idx)
@@ -137,6 +190,37 @@ export default function RoomDetailModal({ room, onClose, guestMode = false }) {
           )}
 
           {/* Core Dismissal Anchor */}
+          <div className="absolute top-4 right-16 z-10">
+   <button
+     onClick={handleNativeShare}
+     className="bg-white/90 text-slate-700 w-8 h-8 rounded-full flex items-center justify-center hover:bg-white shadow-xs border border-slate-200/50 transition"
+     aria-label="Share this room"
+   >
+     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+       <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342a3 3 0 100-2.684m0 2.684a3 3 0 100 2.684m0-2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+     </svg>
+   </button>
+
+   {showShareMenu && (
+     <>
+       <div className="fixed inset-0 z-40" onClick={() => setShowShareMenu(false)} />
+       <div className="absolute top-full right-0 mt-2 bg-white border border-orange-200 rounded-xl shadow-lg overflow-hidden z-50 w-44">
+         <button
+           onClick={handleWhatsAppShare}
+           className="w-full text-left px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-orange-50 transition flex items-center gap-2"
+           >
+           💬 Share on WhatsApp
+         </button>
+         <button
+           onClick={handleCopyLink}
+           className="w-full text-left px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-orange-50 transition flex items-center gap-2 border-t border-orange-100"
+           >
+           🔗 Copy Link
+         </button>
+       </div>
+     </>
+   )}
+ </div>
           <button
             onClick={onClose}
             className="absolute top-4 right-4 bg-white/90 text-slate-700 w-8 h-8 rounded-full flex items-center justify-center hover:bg-white shadow-xs border border-slate-200/50 font-bold text-xs transition z-10"
@@ -189,7 +273,23 @@ export default function RoomDetailModal({ room, onClose, guestMode = false }) {
               </span>
             )}
           </div>
-
+            {/* Owner Profile Card */}
+ {ownerInfo && (
+   <div className="flex items-center gap-3 py-1">
+     <div className="w-11 h-11 rounded-full bg-gradient-to-br from-brand-gold to-[#8a6540] flex items-center justify-center text-white text-sm font-black flex-shrink-0">
+       {ownerInfo.name?.trim().split(' ').slice(0, 2).map((n) => n[0]?.toUpperCase()).join('') || '?'}
+     </div>
+     <div className="min-w-0">
+       <p className="text-slate-800 font-bold text-sm truncate">
+         Hosted by {ownerInfo.name || 'Owner'}
+       </p>
+       <p className="text-slate-400 text-[11px] font-medium">
+         Member since {new Date(ownerInfo.memberSince).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}
+         {ownerInfo.listingsCount > 1 && ` · ${ownerInfo.listingsCount} listings`}
+       </p>
+     </div>
+   </div>
+ )}
           <div className="bg-[#faead2] border border-orange-200/60 rounded-2xl p-4 flex justify-between items-center">
             <div>
               <p className="text-brand-gold font-bold text-[10px] uppercase tracking-wider">Financial Assessment</p>
@@ -234,6 +334,12 @@ export default function RoomDetailModal({ room, onClose, guestMode = false }) {
               </div>
             </div>
           )}
+
+          {/* Reviews Section */}
+         <div className="space-y-3 pt-2 border-t border-orange-100">
+           <h4 className="text-brand-gold font-bold text-[11px] uppercase tracking-wider">Reviews</h4>
+           <ReviewsList roomId={room.id} key={room.id} />
+         </div>
 
           {room.phone_number && (
             <div className="space-y-2 pt-1">

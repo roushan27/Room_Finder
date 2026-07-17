@@ -11,6 +11,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
   const [selectedRole, setSelectedRole] = useState('student')
+  const [showPassword, setShowPassword] = useState(false)
   const { signIn, signInWithGoogle } = useAuth()
   const navigate = useNavigate()
   const { toast } = useToast()
@@ -108,15 +109,38 @@ export default function Login() {
           required
           className="w-full mb-3 px-4 py-2.5 rounded-xl bg-white text-slate-800 text-xs focus:outline-none transition-all shadow-[inset_2px_2px_5px_rgba(180,120,60,0.2),inset_-2px_-2px_5px_rgba(255,255,255,0.7)] focus:shadow-[inset_2px_2px_5px_rgba(180,120,60,0.3),inset_-2px_-2px_5px_rgba(255,255,255,0.5)]"
         />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          className="w-full mb-5 px-4 py-2.5 rounded-xl bg-white text-slate-800 text-xs focus:outline-none transition-all shadow-[inset_2px_2px_5px_rgba(180,120,60,0.2),inset_-2px_-2px_5px_rgba(255,255,255,0.7)] focus:shadow-[inset_2px_2px_5px_rgba(180,120,60,0.3),inset_-2px_-2px_5px_rgba(255,255,255,0.5)]"
-        />
-
+        <div className="relative mb-2">
+   <input
+     type={showPassword ? 'text' : 'password'}
+     placeholder="Password"
+     value={password}
+     onChange={(e) => setPassword(e.target.value)}
+     required
+     className="w-full px-4 py-2.5 pr-11 rounded-xl bg-white text-slate-800 text-xs focus:outline-none transition-all shadow-[inset_2px_2px_5px_rgba(180,120,60,0.2),inset_-2px_-2px_5px_rgba(255,255,255,0.7)] focus:shadow-[inset_2px_2px_5px_rgba(180,120,60,0.3),inset_-2px_-2px_5px_rgba(255,255,255,0.5)]"
+   />
+   <button
+     type="button"
+     onClick={() => setShowPassword((prev) => !prev)}
+     className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition"
+     aria-label={showPassword ? 'Hide password' : 'Show password'}
+   >
+     {showPassword ? (
+       <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+         <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+       </svg>
+     ) : (
+       <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+         <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+         <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+       </svg>
+     )}
+   </button>
+ </div>
+         <p className="text-right mb-3">
+   <Link to="/forgot-password" className="text-[#b5451a] text-[11px] font-bold hover:underline">
+     Forgot Password?
+   </Link>
+ </p>
         <button
           type="submit"
           disabled={loading}

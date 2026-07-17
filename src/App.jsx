@@ -14,6 +14,8 @@ import ChatPage from './pages/ChatPage'
 import ProtectedRoute from './components/common/ProtectedRoute'
 import MyBookings from './pages/student/MyBookings'
 import { ToastProvider } from './context/ToastContext'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
 function App() {
   return (
     <AuthProvider>
@@ -26,7 +28,8 @@ function App() {
             <Route path="/signup" element={<Signup />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/ranchi" element={<RoomList city="Ranchi" />} />
-
+             <Route path="/forgot-password" element={<ForgotPassword />} />
+             <Route path="/reset-password" element={<ResetPassword />} />
             <Route
               path="/dashboard"
               element={

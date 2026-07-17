@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import RoomCard from './RoomCard'
 import RoomDetailModal from './RoomDetailModal'
@@ -13,6 +14,7 @@ const SORT_OPTIONS = [
  ]
 export default function RoomList({ guestMode = false, city }) {
   const { user } = useAuth()  
+  const [searchParams, setSearchParams] = useSearchParams()
   const [rooms, setRooms] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -69,6 +71,38 @@ export default function RoomList({ guestMode = false, city }) {
     fetchRooms()
     fetchFavorites()
   }, [city, user?.id])
+
+  
+
+useEffect(() => {
+  const sharedRoomId = searchParams.get('room')
+  if (!sharedRoomId) return
+
+  if (rooms.length > 0) {
+    const found = rooms.find((r) => r.id === sharedRoomId)
+    if (found) {
+      setSelectedRoom(found)
+      searchParams.delete('room')
+      setSearchParams(searchParams, { replace: true })
+      return
+    }
+  }
+
+  // Fallback: room not in the current filtered list — fetch it directly
+  const fetchSharedRoom = async () => {
+    const { data } = await supabase
+      .from('rooms')
+      .select('id, owner_id, title, description, address, city, price, total_rooms, available_rooms, room_type, facilities, photos, videos, avg_rating, total_ratings, latitude, longitude, created_at, is_active, phone_number, category, occupancy, tenant_type')
+      .eq('id', sharedRoomId)
+      .maybeSingle()
+
+    if (data) setSelectedRoom(data)
+    searchParams.delete('room')
+    setSearchParams(searchParams, { replace: true })
+  }
+
+  if (!loading) fetchSharedRoom()
+}, [rooms, loading])
 
   const toggleDraftRoomType = (type) => {
     setDraftRoomTypes((prev) =>
