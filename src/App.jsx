@@ -16,12 +16,16 @@ import MyBookings from './pages/student/MyBookings'
 import { ToastProvider } from './context/ToastContext'
 import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
+import NotFound from './pages/NotFound'
+import NotificationListener from './components/common/NotificationListener'
 function App() {
+  
   return (
     <AuthProvider>
       <LocationProvider>
         <ToastProvider>
           <BrowserRouter>
+          <NotificationListener />
           <Routes>
             <Route path="/" element={<BrowseRooms />} />
             <Route path="/login" element={<Login />} />
@@ -82,6 +86,8 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            {/* Catch-all — must stay last so it doesn't intercept real routes */}
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
         </ToastProvider>

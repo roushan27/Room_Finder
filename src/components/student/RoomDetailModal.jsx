@@ -31,31 +31,33 @@ export default function RoomDetailModal({ room, onClose, guestMode = false }) {
   ]
   const mediaCount = mediaItems.length
   const activeMedia = mediaItems[activeIdx]
+  useEffect(() => {
+   const fetchOwnerInfo = async () => {
+     const [profileResult, roomsCountResult] = await Promise.all([
+       supabase.from('profiles').select('full_name, created_at').eq('id', room.owner_id).single(),
+       supabase.from('rooms').select('id', { count: 'exact', head: true }).eq('owner_id', room.owner_id).eq('is_active', true),
+     ])
 
-  const handleBook = async () => {
-    if (guestMode || !user) {
-      requireLogin()
-      return
-    }
-    setBooking(true)
-   useEffect(() => {
-  const fetchOwnerInfo = async () => {
-    const [profileResult, roomsCountResult] = await Promise.all([
-      supabase.from('profiles').select('full_name, created_at').eq('id', room.owner_id).single(),
-      supabase.from('rooms').select('id', { count: 'exact', head: true }).eq('owner_id', room.owner_id).eq('is_active', true),
-    ])
+     if (profileResult.data) {
+       setOwnerInfo({
+         name: profileResult.data.full_name,
+         memberSince: profileResult.data.created_at,
+         listingsCount: roomsCountResult.count || 0,
+       })
+     }
+   }
 
-    if (profileResult.data) {
-      setOwnerInfo({
-        name: profileResult.data.full_name,
-        memberSince: profileResult.data.created_at,
-        listingsCount: roomsCountResult.count || 0,
-      })
-    }
+   fetchOwnerInfo()
+ }, [room.owner_id])
+
+ const handleBook = async () => {
+  if (guestMode || !user) {
+    requireLogin()
+    return
   }
+  setBooking(true)
 
-  fetchOwnerInfo()
-}, [room.owner_id])
+  try {
     const { error } = await supabase.from('bookings').insert({
       room_id: room.id,
       student_id: user.id,
@@ -64,11 +66,17 @@ export default function RoomDetailModal({ room, onClose, guestMode = false }) {
       payment_status: 'unpaid',
     })
 
-    if (error) toast.error('Error: ' + error.message)
-    else toast.success('Booking request bhej di gayi! Owner confirm karega.')
+    if (error) {
+      toast.error(error.message || 'Booking failed. Please try again.')
+    } else {
+      toast.success('Booking request sent! Owner will confirm shortly.')
+    }
+  } catch (err) {
+    toast.error('Something went wrong. Please try again.')
+  } finally {
     setBooking(false)
   }
-
+}
   const handleChat = () => {
     if (guestMode || !user) {
       requireLogin()

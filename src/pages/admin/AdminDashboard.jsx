@@ -27,7 +27,6 @@ const PAGE_SIZE = 8
 export default function AdminDashboard() {
   const { profile } = useAuth()
   const { toast } = useToast()
-  toast.success('Dashboard refreshed!')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -58,6 +57,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     fetchRoomsPage(roomsPage)
+    toast.success('Dashboard refreshed!')
   }, [roomsPage])
 
   const fetchAggregateData = async () => {

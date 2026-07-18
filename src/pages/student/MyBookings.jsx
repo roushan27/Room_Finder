@@ -6,6 +6,7 @@ import LogoutButton from '../../components/common/LogoutButton'
 import NotificationBell from '../../components/common/NotificationBell'
 import ChatInbox from '../../components/common/ChatInbox'
 import Footer from '../../components/common/Footer'
+import { useToast } from '../../context/ToastContext'
 
 const STATUS_STYLES = {
   pending: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', label: 'Pending Confirmation' },
@@ -16,11 +17,13 @@ const STATUS_STYLES = {
 export default function MyBookings() {
   const { user } = useAuth()
   const navigate = useNavigate()
+   const { toast } = useToast()
   const [bookings, setBookings] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [filter, setFilter] = useState('all')
-
+  const [cancelTarget, setCancelTarget] = useState(null)
+  const [cancelling, setCancelling] = useState(false)
   useEffect(() => {
     if (user?.id) fetchBookings()
   }, [user?.id])
@@ -30,11 +33,11 @@ export default function MyBookings() {
     setError('')
 
     const { data, error } = await supabase
-      .from('bookings')
-      .select(`
-        id, status, payment_status, check_in, created_at,
-        rooms ( id, title, photos, price, city, address, room_type, phone_number, owner_id )
-      `)
+  .from('bookings')
+  .select(`
+    id, status, payment_status, check_in, created_at,
+    rooms ( id, title, photos, price, city, address, room_type, phone_number, owner_id )
+  `)
       .eq('student_id', user.id)
       .order('created_at', { ascending: false })
 
@@ -42,7 +45,47 @@ export default function MyBookings() {
     else setBookings(data || [])
     setLoading(false)
   }
+ 
+  const confirmCancel = (booking) => setCancelTarget(booking)
+const dismissCancel = () => setCancelTarget(null)
 
+const handleCancelBooking = async () => {
+  if (!cancelTarget) return
+  setCancelling(true)
+
+  const { error } = await supabase
+    .from('bookings')
+    .update({ status: 'cancelled' })
+    .eq('id', cancelTarget.id)
+    .eq('student_id', user.id) // safety: only cancel own bookings
+
+  if (error) {
+    toast.error('Could not cancel booking: ' + error.message)
+  } else {
+    toast.success('Booking cancelled')
+    setBookings((prev) =>
+      prev.map((b) => (b.id === cancelTarget.id ? { ...b, status: 'cancelled' } : b))
+    )
+     // Notify the room owner — non-blocking, don't fail the cancel flow if this errors
+     const ownerId = cancelTarget.rooms?.owner_id
+     if (ownerId) {
+      const { data: studentProfile } = await supabase
+         .from('profiles')
+         .select('full_name')
+         .eq('id', user.id)
+         .single()
+
+       const studentName = studentProfile?.full_name || 'A student'
+       await supabase.from('notifications').insert({
+         user_id: ownerId,
+         message: `${studentName} cancelled their booking for "${cancelTarget.rooms?.title || 'your room'}"`,
+         is_read: false,
+       })
+     }
+  }
+  setCancelling(false)
+  setCancelTarget(null)
+}
   const filteredBookings = bookings.filter((b) => filter === 'all' || b.status === filter)
 
   const counts = {
@@ -188,6 +231,14 @@ export default function MyBookings() {
                         📞 Call Owner: {room.phone_number}
                       </a>
                     )}
+                    {booking.status === 'pending' && (
+   <button
+     onClick={() => confirmCancel(booking)}
+     className="inline-flex items-center gap-1.5 mt-2 text-brand-coral text-[10px] font-black uppercase tracking-wider hover:underline"
+   >
+     ✕ Cancel Booking
+   </button>
+ )}
                   </div>
                 </div>
               )
@@ -196,9 +247,52 @@ export default function MyBookings() {
         )}
       </div>
 
+
+     {/* Cancel Confirmation Modal */}
+     {cancelTarget && (
+       <div
+         className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4"
+         onClick={dismissCancel}
+       >
+         <div
+           onClick={(e) => e.stopPropagation()}
+           className="bg-white border border-orange-200/70 rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center animate-in fade-in zoom-in-95 duration-150"
+         >
+           <div className="w-14 h-14 rounded-full bg-brand-coral/10 flex items-center justify-center mx-auto mb-4">
+             <svg className="w-6 h-6 text-brand-coral" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+             </svg>
+           </div>
+
+           <h3 className="text-slate-800 font-black text-base mb-1.5">Cancel this booking?</h3>
+           <p className="text-slate-500 text-xs font-medium leading-relaxed mb-6">
+             Your request for "<span className="font-bold text-slate-700">{cancelTarget.rooms?.title}</span>" will be cancelled.
+           </p>
+
+           <div className="flex gap-3">
+             <button
+               onClick={dismissCancel}
+               disabled={cancelling}
+               className="flex-1 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-wider hover:bg-slate-100 transition active:scale-95 disabled:opacity-50"
+             >
+               Keep Booking
+             </button>
+             <button
+               onClick={handleCancelBooking}
+               disabled={cancelling}
+               className="flex-1 py-2.5 rounded-xl bg-brand-coral text-white text-xs font-black uppercase tracking-wider hover:opacity-90 transition active:scale-95 disabled:opacity-50 shadow-2xs"
+             >
+               {cancelling ? 'Cancelling...' : 'Yes, Cancel'}
+             </button>
+           </div>
+         </div>
+       </div>
+     )}
+
       <div className="mt-12 max-w-5xl w-full mx-auto">
         <Footer />
       </div>
     </div>
   )
 }
+   
