@@ -15,7 +15,6 @@ export default function ChatPage() {
   const [text, setText] = useState('')
   const [otherName, setOtherName] = useState('')
   const [loading, setLoading] = useState(true)
-  const [openMenuId, setOpenMenuId] = useState(null)
   const [otherIsTyping, setOtherIsTyping] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [recording, setRecording] = useState(false)
@@ -28,7 +27,7 @@ export default function ChatPage() {
   const mediaRecorderRef = useRef(null)
   const audioChunksRef = useRef([])
   const isRecordingRef = useRef(false)
-const pressTimerRef = useRef(null)
+  const pressTimerRef = useRef(null)
 
   useEffect(() => {
     fetchOtherProfile()
@@ -91,12 +90,7 @@ const pressTimerRef = useRef(null)
     bottomRef.current?.scrollIntoView({ behavior: loading ? 'auto' : 'smooth' })
   }, [messages, loading])
 
-  useEffect(() => {
-    const closeMenu = () => setOpenMenuId(null)
-    document.addEventListener('click', closeMenu)
-    return () => document.removeEventListener('click', closeMenu)
-  }, [])
-
+ 
   const fetchOtherProfile = async () => {
     const { data } = await supabase.from('profiles').select('full_name').eq('id', otherUserId).single()
     if (data) setOtherName(data.full_name)
@@ -241,12 +235,11 @@ const pressTimerRef = useRef(null)
   }
 
   const handleDelete = async (messageId) => {
-    setOpenMenuId(null)
+  
    const { error, count } = await supabase
    .from('messages')
    .delete({ count: 'exact' })
    .eq('id', messageId)
-   .eq('sender_id', user.id)
     if (error) {
       toast.error('Delete failed: ' + error.message)
       } else if (count === 0) {
@@ -297,7 +290,7 @@ const pressTimerRef = useRef(null)
                 </span>
               </span>
             ) : (
-              'Room Owner'
+              'Online'
             )}
           </p>
         </div>
@@ -330,22 +323,10 @@ const pressTimerRef = useRef(null)
                   const isLast = i === group.length - 1
 
                   return (
-                    <div key={msg.id} className="relative group flex items-center gap-1">
-                      {isMe && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setOpenMenuId(openMenuId === msg.id ? null : msg.id)
-                          }}
-                          className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-slate-600 text-sm px-1 transition"
-                        >
-                          ⋮
-                        </button>
-                      )}
-
+                    <div key={msg.id}>
                       <div
                       onPointerDown={() => {
-         if (!isMe) return
+         
          pressTimerRef.current = setTimeout(() => {
            setLongPressMsgId(msg.id)
            if (navigator.vibrate) navigator.vibrate(30)
@@ -376,20 +357,9 @@ const pressTimerRef = useRef(null)
                         )}
                       </div>
 
-                      {isMe && openMenuId === msg.id && (
-                        <div
-                          onClick={(e) => e.stopPropagation()}
-                          className="absolute right-full mr-1 top-0 bg-white border border-orange-200 rounded-lg shadow-xl z-10 overflow-hidden"
-                        >
-                          <button
-                            onClick={() => handleDelete(msg.id)}
-                            className="px-4 py-2 text-brand-coral text-xs font-bold hover:bg-orange-50 transition whitespace-nowrap"
-                          >
-                            🗑️ Delete
-                          </button>
-                        </div>
-                      )}
-                       {isMe && longPressMsgId === msg.id && (
+                     
+                       
+             {longPressMsgId === msg.id && (         
        <div
          className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4"
          onClick={() => setLongPressMsgId(null)}
