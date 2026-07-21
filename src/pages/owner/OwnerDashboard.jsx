@@ -8,6 +8,7 @@ import LogoutButton from '../../components/common/LogoutButton'
 import NotificationBell from '../../components/common/NotificationBell'
 import ChatInbox from '../../components/common/ChatInbox'
 import Footer from '../../components/common/Footer'
+import BottomNav from '../../components/common/BottomNav'
 
 export default function OwnerDashboard() {
   const { profile } = useAuth()
@@ -20,7 +21,7 @@ export default function OwnerDashboard() {
   const refreshBookings = () => setBookingsRefreshTrigger((prev) => prev + 1)
 
      return (
-    <div className="min-h-screen bg-brand-cream antialiased text-slate-800">
+  <div className="min-h-screen bg-brand-cream p-4 sm:p-6 text-slate-800 antialiased pb-20 sm:pb-6">
       {/* Full-bleed gradient banner header */}
       <div className="bg-gradient-to-b from-[#e8792e] to-[#f4a565] px-4 sm:px-6 py-5 sm:py-6">
        <div className="max-w-7xl w-full mx-auto flex flex-row justify-between items-center gap-2">
@@ -43,8 +44,10 @@ export default function OwnerDashboard() {
               <ChatInbox />
               <div className="w-px h-4 bg-white/25" />
               <NotificationBell />
-              <div className="w-px h-4 bg-white/25" />
-              <LogoutButton />
+             <div className="w-px h-4 bg-white/25 hidden sm:block" />
+ <span className="hidden sm:block">
+   <LogoutButton />
+ </span>
             </div>
           </div>
         </div>
@@ -103,6 +106,7 @@ export default function OwnerDashboard() {
       <div className="mt-12 max-w-7xl w-full mx-auto">
         <Footer />
       </div>
+      <BottomNav />
     </div>
   )
 }

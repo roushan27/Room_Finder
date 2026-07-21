@@ -18,6 +18,8 @@ import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
 import NotFound from './pages/NotFound'
 import NotificationListener from './components/common/NotificationListener'
+import Messages from './pages/Messages'
+
 function App() {
   
   return (
@@ -86,6 +88,14 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+   path="/messages"
+   element={
+     <ProtectedRoute>
+       <Messages />
+     </ProtectedRoute>
+   }
+ />
             {/* Catch-all — must stay last so it doesn't intercept real routes */}
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -72,7 +72,11 @@ export default function RoomList({ guestMode = false, city }) {
     fetchFavorites()
   }, [city, user?.id])
 
-  
+  useEffect(() => {
+   if (searchParams.get('favorites') === '1') {
+     setShowFavoritesOnly(true)
+   }
+ }, [])
 
 useEffect(() => {
   const sharedRoomId = searchParams.get('room')
@@ -246,7 +250,7 @@ useEffect(() => {
   {!guestMode && (
     <button
       onClick={() => setShowFavoritesOnly((prev) => !prev)}
-      className={`flex-shrink-0 flex items-center justify-center w-11 h-11 rounded-xl border transition active:scale-95 shadow-2xs ${
+     className={`hidden sm:flex flex-shrink-0 items-center justify-center w-11 h-11 rounded-xl border transition active:scale-95 shadow-2xs ${
         showFavoritesOnly
           ? 'bg-brand-coral border-brand-coral text-white'
           : 'bg-white border-orange-200 text-brand-coral hover:bg-orange-50'

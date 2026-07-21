@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 
+const TYPING_TIMEOUT_MS = 2500
+
 export default function ChatPage() {
   const { roomId, otherUserId } = useParams()
   const { user } = useAuth()
@@ -12,7 +14,11 @@ export default function ChatPage() {
   const [otherName, setOtherName] = useState('')
   const [loading, setLoading] = useState(true)
   const [openMenuId, setOpenMenuId] = useState(null)
+  const [otherIsTyping, setOtherIsTyping] = useState(false)
   const bottomRef = useRef(null)
+  const typingChannelRef = useRef(null)
+  const typingTimeoutRef = useRef(null)
+  const otherTypingTimeoutRef = useRef(null)
 
   useEffect(() => {
     fetchOtherProfile()
@@ -53,6 +59,35 @@ export default function ChatPage() {
 
     return () => {
       supabase.removeChannel(channel)
+    }
+  }, [roomId, otherUserId])
+
+  // Typing indicator — separate broadcast channel, shared by both participants of this conversation
+  useEffect(() => {
+    const typingChannel = supabase.channel(`typing-${roomId}-${[user.id, otherUserId].sort().join('-')}`)
+
+    typingChannel
+      .on('broadcast', { event: 'typing' }, (payload) => {
+        if (payload.payload.userId !== user.id) {
+          setOtherIsTyping(true)
+          clearTimeout(otherTypingTimeoutRef.current)
+          otherTypingTimeoutRef.current = setTimeout(() => setOtherIsTyping(false), TYPING_TIMEOUT_MS)
+        }
+      })
+      .on('broadcast', { event: 'stop_typing' }, (payload) => {
+        if (payload.payload.userId !== user.id) {
+          setOtherIsTyping(false)
+          clearTimeout(otherTypingTimeoutRef.current)
+        }
+      })
+      .subscribe()
+
+    typingChannelRef.current = typingChannel
+
+    return () => {
+      clearTimeout(otherTypingTimeoutRef.current)
+      clearTimeout(typingTimeoutRef.current)
+      supabase.removeChannel(typingChannel)
     }
   }, [roomId, otherUserId])
 
@@ -100,12 +135,40 @@ export default function ChatPage() {
       .eq('is_read', false)
   }
 
+  const handleTextChange = (e) => {
+    setText(e.target.value)
+
+    if (typingChannelRef.current) {
+      typingChannelRef.current.send({
+        type: 'broadcast',
+        event: 'typing',
+        payload: { userId: user.id },
+      })
+    }
+
+    clearTimeout(typingTimeoutRef.current)
+    typingTimeoutRef.current = setTimeout(() => {
+      typingChannelRef.current?.send({
+        type: 'broadcast',
+        event: 'stop_typing',
+        payload: { userId: user.id },
+      })
+    }, TYPING_TIMEOUT_MS)
+  }
+
   const sendMessage = async (e) => {
     e.preventDefault()
     if (!text.trim()) return
 
     const messageText = text
     setText('')
+
+    clearTimeout(typingTimeoutRef.current)
+    typingChannelRef.current?.send({
+      type: 'broadcast',
+      event: 'stop_typing',
+      payload: { userId: user.id },
+    })
 
     const { error } = await supabase.from('messages').insert({
       room_id: roomId,
@@ -162,7 +225,20 @@ export default function ChatPage() {
         </button>
         <div className="min-w-0">
           <h2 className="text-sm font-bold text-white truncate">{otherName || 'Chat'}</h2>
-          <p className="text-[10px] text-white/70 font-bold uppercase tracking-wider">Room #{roomId?.slice(0, 8)}</p>
+          <p className="text-[10px] text-white/70 font-bold uppercase tracking-wider">
+            {otherIsTyping ? (
+              <span className="flex items-center gap-1">
+                typing
+                <span className="flex gap-0.5">
+                  <span className="w-1 h-1 bg-white/80 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                  <span className="w-1 h-1 bg-white/80 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                  <span className="w-1 h-1 bg-white/80 rounded-full animate-bounce" />
+                </span>
+              </span>
+            ) : (
+              `Room #${roomId?.slice(0, 8)}`
+            )}
+          </p>
         </div>
       </header>
 
@@ -256,7 +332,7 @@ export default function ChatPage() {
             type="text"
             placeholder="Type your message..."
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={handleTextChange}
             className="flex-grow px-4 py-2.5 bg-[#fdeee0] border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#5d8a6e] transition-all"
           />
           <button
