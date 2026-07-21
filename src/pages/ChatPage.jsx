@@ -14,12 +14,12 @@ export default function ChatPage() {
   const [messages, setMessages] = useState([])
   const [text, setText] = useState('')
   const [otherName, setOtherName] = useState('')
-  const [otherPhone, setOtherPhone] = useState('')
   const [loading, setLoading] = useState(true)
   const [openMenuId, setOpenMenuId] = useState(null)
   const [otherIsTyping, setOtherIsTyping] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [recording, setRecording] = useState(false)
+  const [longPressMsgId, setLongPressMsgId] = useState(null)
   const bottomRef = useRef(null)
   const typingChannelRef = useRef(null)
   const typingTimeoutRef = useRef(null)
@@ -27,6 +27,8 @@ export default function ChatPage() {
   const fileInputRef = useRef(null)
   const mediaRecorderRef = useRef(null)
   const audioChunksRef = useRef([])
+  const isRecordingRef = useRef(false)
+const pressTimerRef = useRef(null)
 
   useEffect(() => {
     fetchOtherProfile()
@@ -96,11 +98,8 @@ export default function ChatPage() {
   }, [])
 
   const fetchOtherProfile = async () => {
-    const { data } = await supabase.from('profiles').select('full_name, phone').eq('id', otherUserId).single()
-    if (data) {
-      setOtherName(data.full_name)
-      setOtherPhone(data.phone || '')
-    }
+    const { data } = await supabase.from('profiles').select('full_name').eq('id', otherUserId).single()
+    if (data) setOtherName(data.full_name)
   }
 
   const fetchMessages = async () => {
@@ -201,37 +200,60 @@ export default function ChatPage() {
     e.target.value = ''
   }
 
-  const startRecording = async () => {
+  const startRecording = async (e) => {
+    e.preventDefault()
+    if (isRecordingRef.current) return
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      const recorder = new MediaRecorder(stream)
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4'
+      const recorder = new MediaRecorder(stream, { mimeType })
       audioChunksRef.current = []
 
-      recorder.ondataavailable = (e) => audioChunksRef.current.push(e.data)
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data)
+      }
       recorder.onstop = () => {
-        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
         stream.getTracks().forEach((track) => track.stop())
-        uploadAndSendMedia(blob, 'audio', 'webm')
+        if (audioChunksRef.current.length > 0) {
+          const blob = new Blob(audioChunksRef.current, { type: mimeType })
+          uploadAndSendMedia(blob, 'audio', mimeType.includes('webm') ? 'webm' : 'm4a')
+        }
       }
 
       mediaRecorderRef.current = recorder
       recorder.start()
+      isRecordingRef.current = true
       setRecording(true)
-    } catch {
-      toast.error('Microphone access denied')
+    } catch (err) {
+      toast.error('Microphone access denied or unavailable')
     }
   }
 
-  const stopRecording = () => {
-    mediaRecorderRef.current?.stop()
+  const stopRecording = (e) => {
+    e.preventDefault()
+    if (!isRecordingRef.current) return
+    isRecordingRef.current = false
     setRecording(false)
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop()
+    }
   }
 
   const handleDelete = async (messageId) => {
     setOpenMenuId(null)
-    const { error } = await supabase.from('messages').delete().eq('id', messageId)
-    if (error) toast.error('Delete failed: ' + error.message)
-    else setMessages((prev) => prev.filter((m) => m.id !== messageId))
+   const { error, count } = await supabase
+   .from('messages')
+   .delete({ count: 'exact' })
+   .eq('id', messageId)
+   .eq('sender_id', user.id)
+    if (error) {
+      toast.error('Delete failed: ' + error.message)
+      } else if (count === 0) {
+     toast.error('You can only delete your own messages')
+    } else {
+      setMessages((prev) => prev.filter((m) => m.id !== messageId))
+    }
   }
 
   const getTickStatus = (msg) => {
@@ -249,30 +271,29 @@ export default function ChatPage() {
   }, [])
 
   return (
-    <div className="h-screen bg-[#0e1621] flex flex-col font-sans antialiased">
+    <div className="h-screen bg-brand-cream flex flex-col font-sans antialiased text-slate-800">
       {/* Header */}
-      <header className="w-full bg-[#1a2530] px-4 py-3 flex items-center gap-3 shadow-md sticky top-0 z-10 flex-shrink-0 border-b border-white/5">
-        <button onClick={() => navigate(-1)} className="p-1.5 rounded-lg hover:bg-white/10 text-white/80 transition-all outline-none">
+      <header className="w-full bg-gradient-to-r from-[#b5451a] to-[#e8792e] px-4 py-3 flex items-center gap-3 shadow-md sticky top-0 z-10 flex-shrink-0">
+        <button onClick={() => navigate(-1)} className="p-1.5 rounded-lg hover:bg-white/15 text-white transition-all outline-none">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2.2} viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
         </button>
 
-        <div className="relative w-10 h-10 rounded-full bg-gradient-to-br from-brand-sage to-[#3d6650] flex items-center justify-center text-white font-black text-sm flex-shrink-0">
+        <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-white font-black text-sm flex-shrink-0">
           {otherName?.trim().charAt(0).toUpperCase() || '?'}
-          <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-[#1a2530]" />
         </div>
 
         <div className="min-w-0 flex-1">
           <h2 className="text-sm font-bold text-white truncate">{otherName || 'Chat'}</h2>
-          <p className="text-[10px] text-white/50 font-bold uppercase tracking-wider">
+          <p className="text-[10px] text-white/70 font-bold uppercase tracking-wider">
             {otherIsTyping ? (
-              <span className="flex items-center gap-1 text-emerald-400 normal-case font-semibold">
+              <span className="flex items-center gap-1 normal-case font-semibold">
                 typing
                 <span className="flex gap-0.5">
-                  <span className="w-1 h-1 bg-emerald-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                  <span className="w-1 h-1 bg-emerald-400 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                  <span className="w-1 h-1 bg-emerald-400 rounded-full animate-bounce" />
+                  <span className="w-1 h-1 bg-white/80 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                  <span className="w-1 h-1 bg-white/80 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                  <span className="w-1 h-1 bg-white/80 rounded-full animate-bounce" />
                 </span>
               </span>
             ) : (
@@ -280,18 +301,6 @@ export default function ChatPage() {
             )}
           </p>
         </div>
-
-        {otherPhone && (
-          
-          <a  href={`tel:${otherPhone}`}
-            className="w-9 h-9 flex items-center justify-center rounded-full text-white/70 hover:bg-white/10 hover:text-white transition"
-            aria-label="Call"
-          >
-            <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-            </svg>
-          </a>
-        )}
       </header>
 
       {/* Messages */}
@@ -300,21 +309,20 @@ export default function ChatPage() {
           <div className="flex flex-col gap-3">
             {[1, 2, 3].map((i) => (
               <div key={i} className={`flex ${i % 2 === 0 ? 'justify-end' : 'justify-start'}`}>
-                <div className={`h-9 w-32 rounded-2xl animate-pulse ${i % 2 === 0 ? 'bg-brand-sage/20' : 'bg-white/10'}`} />
+                <div className={`h-9 w-32 rounded-2xl animate-pulse ${i % 2 === 0 ? 'bg-brand-sage/20' : 'bg-orange-100'}`} />
               </div>
             ))}
           </div>
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center px-6">
             <span className="text-3xl mb-2">💬</span>
-            <p className="text-white/60 text-xs font-bold">No messages yet</p>
-            <p className="text-white/30 text-[11px] font-medium mt-1">Send a message to start the conversation</p>
+            <p className="text-slate-500 text-xs font-bold">No messages yet</p>
+            <p className="text-slate-400 text-[11px] font-medium mt-1">Send a message to start the conversation</p>
           </div>
         ) : (
           groupedMessages.map((group, groupIdx) => {
             const isMe = group[0].sender_id === user.id
             const lastMsg = group[group.length - 1]
-
             return (
               <div key={groupIdx} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} gap-1`}>
                 {group.map((msg, i) => {
@@ -329,14 +337,23 @@ export default function ChatPage() {
                             e.stopPropagation()
                             setOpenMenuId(openMenuId === msg.id ? null : msg.id)
                           }}
-                          className="opacity-0 group-hover:opacity-100 text-white/40 hover:text-white/70 text-sm px-1 transition"
+                          className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-slate-600 text-sm px-1 transition"
                         >
                           ⋮
                         </button>
                       )}
 
                       <div
-                        className={`max-w-[78%] sm:max-w-xs md:max-w-md text-[13px] font-medium leading-relaxed shadow-[0_1px_3px_rgba(0,0,0,0.2)] ${
+                      onPointerDown={() => {
+         if (!isMe) return
+         pressTimerRef.current = setTimeout(() => {
+           setLongPressMsgId(msg.id)
+           if (navigator.vibrate) navigator.vibrate(30)
+         }, 500)
+       }}
+       onPointerUp={() => clearTimeout(pressTimerRef.current)}
+       onPointerLeave={() => clearTimeout(pressTimerRef.current)}
+                        className={`max-w-[78%] sm:max-w-xs md:max-w-md text-[13px] font-medium leading-relaxed shadow-[0_1px_3px_rgba(0,0,0,0.06)] ${
                           msg.message_type === 'image' ? 'p-1.5' : 'px-4 py-2.5'
                         } ${
                           isMe
@@ -347,7 +364,13 @@ export default function ChatPage() {
                         {msg.message_type === 'image' && msg.media_url ? (
                           <img src={msg.media_url} alt="Sent photo" className="rounded-xl max-w-full max-h-72 object-cover" />
                         ) : msg.message_type === 'audio' && msg.media_url ? (
-                          <audio src={msg.media_url} controls className="w-56 h-9" />
+                          <audio
+   src={msg.media_url}
+   controls
+   controlsList="nodownload noplaybackrate"
+   onContextMenu={(e) => e.preventDefault()}
+   className="w-56 h-9"
+    />
                         ) : (
                           msg.text
                         )}
@@ -356,26 +379,56 @@ export default function ChatPage() {
                       {isMe && openMenuId === msg.id && (
                         <div
                           onClick={(e) => e.stopPropagation()}
-                          className="absolute right-full mr-1 top-0 bg-[#1a2530] border border-white/10 rounded-lg shadow-xl z-10 overflow-hidden"
+                          className="absolute right-full mr-1 top-0 bg-white border border-orange-200 rounded-lg shadow-xl z-10 overflow-hidden"
                         >
                           <button
                             onClick={() => handleDelete(msg.id)}
-                            className="px-4 py-2 text-red-400 text-xs font-bold hover:bg-white/5 transition whitespace-nowrap"
+                            className="px-4 py-2 text-brand-coral text-xs font-bold hover:bg-orange-50 transition whitespace-nowrap"
                           >
                             🗑️ Delete
                           </button>
                         </div>
                       )}
+                       {isMe && longPressMsgId === msg.id && (
+       <div
+         className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4"
+         onClick={() => setLongPressMsgId(null)}
+       >
+         <div
+           onClick={(e) => e.stopPropagation()}
+           className="bg-white border border-orange-200/70 rounded-2xl shadow-2xl w-full max-w-xs p-5 text-center animate-in fade-in zoom-in-95 duration-150"
+         >
+           <p className="text-slate-800 font-bold text-sm mb-4">Delete this message?</p>
+           <div className="flex gap-2">
+             <button
+               onClick={() => setLongPressMsgId(null)}
+               className="flex-1 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-wider active:scale-95 transition"
+             >
+               Cancel
+             </button>
+             <button
+               onClick={() => {
+                 handleDelete(msg.id)
+                 setLongPressMsgId(null)
+               }}
+               className="flex-1 py-2 rounded-xl bg-brand-coral text-white text-xs font-black uppercase tracking-wider active:scale-95 transition shadow-2xs"
+             >
+               Delete
+             </button>
+           </div>
+         </div>
+       </div>
+     )}
                     </div>
                   )
                 })}
 
                 <div className="flex items-center gap-1 px-1">
-                  <p className="text-[10px] text-white/40 font-medium">
+                  <p className="text-[10px] text-slate-400 font-medium">
                     {new Date(lastMsg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>
                   {isMe && (
-                    <span className={`text-[11px] ${getTickStatus(lastMsg) === 'read' ? 'text-emerald-400 font-bold' : 'text-white/40'}`}>
+                    <span className={`text-[11px] ${getTickStatus(lastMsg) === 'read' ? 'text-brand-sage font-bold' : 'text-slate-400'}`}>
                       {getTickStatus(lastMsg) === 'sent' ? '✓' : '✓✓'}
                     </span>
                   )}
@@ -388,15 +441,15 @@ export default function ChatPage() {
       </main>
 
       {/* Input */}
-      <footer className="w-full bg-[#1a2530] border-t border-white/5 p-3 sticky bottom-0 flex-shrink-0">
+      <footer className="w-full bg-white border-t border-orange-100 p-3 sticky bottom-0 flex-shrink-0">
         <form onSubmit={sendMessage} className="max-w-xl mx-auto flex gap-2 items-center">
           <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
 
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-            className="w-9 h-9 flex-shrink-0 flex items-center justify-center text-white/50 hover:text-white transition disabled:opacity-40"
+            disabled={uploading || recording}
+            className="w-9 h-9 flex-shrink-0 flex items-center justify-center text-slate-400 hover:text-brand-sage transition disabled:opacity-40"
             aria-label="Attach photo"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -410,7 +463,7 @@ export default function ChatPage() {
             value={text}
             onChange={handleTextChange}
             disabled={recording}
-            className="flex-grow px-4 py-2.5 bg-white/10 rounded-full text-[13px] text-white placeholder-white/40 focus:outline-none focus:bg-white/15 transition-all disabled:opacity-50"
+            className="flex-grow px-4 py-2.5 bg-slate-100 rounded-full text-[13px] text-slate-800 placeholder-slate-500 focus:outline-none focus:bg-white focus:ring-2 focus:ring-brand-sage/30 transition-all disabled:opacity-50"
           />
 
           {text.trim() ? (
@@ -425,14 +478,12 @@ export default function ChatPage() {
           ) : (
             <button
               type="button"
-              onMouseDown={startRecording}
-              onMouseUp={stopRecording}
-              onMouseLeave={() => recording && stopRecording()}
-              onTouchStart={startRecording}
-              onTouchEnd={stopRecording}
+              onPointerDown={startRecording}
+              onPointerUp={stopRecording}
+              onPointerLeave={(e) => recording && stopRecording(e)}
               disabled={uploading}
-              className={`w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full transition-all shadow-md active:scale-90 ${
-                recording ? 'bg-red-500 animate-pulse' : 'bg-brand-sage hover:opacity-90'
+              className={`w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full transition-all shadow-md active:scale-90 touch-none select-none ${
+                recording ? 'bg-brand-coral animate-pulse' : 'bg-brand-sage hover:opacity-90'
               } text-white disabled:opacity-40`}
               aria-label="Hold to record voice message"
             >
@@ -443,7 +494,7 @@ export default function ChatPage() {
           )}
         </form>
         {recording && (
-          <p className="text-center text-red-400 text-[10px] font-bold mt-2 uppercase tracking-wider animate-pulse">
+          <p className="text-center text-brand-coral text-[10px] font-bold mt-2 uppercase tracking-wider animate-pulse">
             Recording... release to send
           </p>
         )}
