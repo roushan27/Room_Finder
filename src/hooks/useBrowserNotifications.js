@@ -29,7 +29,7 @@ export function useBrowserNotifications() {
           if (!('Notification' in window) || Notification.permission !== 'granted') return
 
           const { data: senderProfile } = await supabase
-            .from('profiles')
+            .from('profiles_public')
             .select('full_name')
             .eq('id', msg.sender_id)
             .single()

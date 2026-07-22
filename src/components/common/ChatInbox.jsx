@@ -89,7 +89,7 @@ export default function ChatInbox() {
 
     const [profilesResult, roomsResult] = await Promise.all([
       otherIds.length > 0
-        ? supabase.from('profiles').select('id, full_name').in('id', otherIds)
+        ? supabase.from('profiles_public').select('id, full_name').in('id', otherIds)
         : Promise.resolve({ data: [] }),
       roomIds.length > 0
         ? supabase.from('rooms').select('id, title').in('id', roomIds)

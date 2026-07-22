@@ -73,10 +73,8 @@ export default function RoomList({ guestMode = false, city }) {
   }, [city, user?.id])
 
   useEffect(() => {
-   if (searchParams.get('favorites') === '1') {
-     setShowFavoritesOnly(true)
-   }
- }, [])
+    setShowFavoritesOnly(searchParams.get('favorites') === '1')
+   }, [searchParams])
 
 useEffect(() => {
   const sharedRoomId = searchParams.get('room')

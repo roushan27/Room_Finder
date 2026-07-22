@@ -7,69 +7,87 @@ export default function BottomNav() {
   const location = useLocation()
   const { profile, signOut } = useAuth()
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
-
+  
   if (!profile) return null
 
   const homePath = profile.role === 'owner' ? '/owner/dashboard' : '/student/dashboard'
   const isStudent = profile.role === 'student'
-
-  const tabs = [
-    {
-      key: 'home',
-      label: 'Home',
-      path: homePath,
-      icon: (active) => (
-        <svg className="w-5 h-5" fill={active ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h4a1 1 0 001-1v-5a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 001 1h4a1 1 0 001-1V10" />
-        </svg>
-      ),
-    },
-    ...(isStudent
-      ? [
-          {
-            key: 'bookings',
-            label: 'Bookings',
-            path: '/student/bookings',
-            icon: (active) => (
-              <svg className="w-5 h-5" fill={active ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            ),
-          },
-        ]
-      : []),
-    {
-      key: 'favorites',
-      label: 'Saved',
-      path: `${homePath}?favorites=1`,
-      icon: (active) => (
-        <svg className="w-5 h-5" fill={active ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-        </svg>
-      ),
-    },
-    {
-   key: 'messages',
-      label: 'Chat',
-      path: '/messages',
-      icon: (active) => (
-        <svg className="w-5 h-5" fill={active ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-        </svg>
-      ),
-    },
-    {
-      key: 'profile',
-      label: 'Profile',
-      action: () => setShowLogoutConfirm(true),
-      icon: (active) => (
-        <svg className="w-5 h-5" fill={active ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-        </svg>
-      ),
-    },
-  ]
-
+  const isOwner = profile.role === 'owner'
+ 
+const tabs = [
+  {
+    key: 'home',
+    label: 'Home',
+    path: homePath,
+    icon: (active) => (
+      <svg className="w-5 h-5" fill={active ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h4a1 1 0 001-1v-5a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 001 1h4a1 1 0 001-1V10" />
+      </svg>
+    ),
+  },
+  ...(isStudent
+    ? [
+        {
+          key: 'bookings',
+          label: 'Bookings',
+          path: '/student/bookings',
+          icon: (active) => (
+            <svg className="w-5 h-5" fill={active ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          ),
+        },
+      ]
+    : []),
+  ...(isStudent
+    ? [
+        {
+          key: 'favorites',
+          label: 'Saved',
+          path: `${homePath}?favorites=1`,
+          icon: (active) => (
+            <svg className="w-5 h-5" fill={active ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+            </svg>
+          ),
+        },
+      ]
+    : []),
+  ...(isOwner
+    ? [
+        {
+          key: 'add-room',
+          label: 'Add Room',
+          action: () => window.dispatchEvent(new CustomEvent('open-add-room')),
+          icon: (active) => (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2.2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+          ),
+        },
+      ]
+    : []),
+  {
+    key: 'messages',
+    label: 'Chat',
+    path: '/messages',
+    icon: (active) => (
+      <svg className="w-5 h-5" fill={active ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+      </svg>
+    ),
+  },
+  {
+    key: 'profile',
+    label: 'Profile',
+    action: () => setShowLogoutConfirm(true),
+    icon: (active) => (
+      <svg className="w-5 h-5" fill={active ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+      </svg>
+    ),
+  },
+]
   const isActive = (tab) => {
     if (!tab.path) return false
     const [tabPath, tabQuery] = tab.path.split('?')
@@ -80,27 +98,33 @@ export default function BottomNav() {
 
   return (
     <>
-      <nav className="fixed bottom-0 left-0 right-0 z-40 sm:hidden bg-white border-t border-orange-200/70 shadow-[0_-2px_12px_rgba(0,0,0,0.06)] pb-[env(safe-area-inset-bottom)]">
-        <div className="flex items-center justify-around px-2 py-2">
-          {tabs.map((tab) => {
-            const active = isActive(tab)
-            return (
-              <button
-                key={tab.key}
-                onClick={() => (tab.action ? tab.action() : navigate(tab.path))}
-                className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all active:scale-90 ${
-                  active ? 'text-brand-sage' : 'text-slate-400'
-                }`}
-              >
-                {tab.icon(active)}
-                <span className={`text-[10px] font-bold ${active ? 'text-brand-sage' : 'text-slate-400'}`}>
-                  {tab.label}
-                </span>
-              </button>
-            )
-          })}
-        </div>
-      </nav>
+      <nav className="fixed bottom-0 left-0 right-0 z-40 sm:hidden bg-white/95 backdrop-blur-md border-t border-orange-200/60 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] pb-[env(safe-area-inset-bottom)]">
+     <div className="flex items-center justify-around px-2 py-2">
+       {tabs.map((tab) => {
+         const active = isActive(tab)
+         return (
+           <button
+             key={tab.key}
+             onClick={() => (tab.action ? tab.action() : navigate(tab.path))}
+             className="flex flex-col items-center gap-1 px-2 py-1 transition-all active:scale-90 min-w-[56px]"
+           >
+             <div
+               className={`flex items-center justify-center w-11 h-8 rounded-full transition-all ${
+                 active ? 'bg-brand-sage/15' : 'bg-transparent'
+               }`}
+             >
+               <span className={active ? 'text-brand-sage' : 'text-slate-400'}>
+                 {tab.icon(active)}
+               </span>
+             </div>
+             <span className={`text-[10px] font-bold transition-colors ${active ? 'text-brand-sage' : 'text-slate-400'}`}>
+               {tab.label}
+             </span>
+           </button>
+         )
+       })}
+     </div>
+   </nav>
 
       {/* Logout Confirmation Modal — theme-matched */}
       {showLogoutConfirm && (

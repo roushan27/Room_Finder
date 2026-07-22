@@ -34,6 +34,7 @@ export default function AdminDashboard() {
   const [allUsersLite, setAllUsersLite] = useState([])
   const [allRoomsLite, setAllRoomsLite] = useState([])
   const [allBookingsLite, setAllBookingsLite] = useState([])
+  const [allRoomEventsLite, setAllRoomEventsLite] = useState([])
   const [counts, setCounts] = useState({ messages: 0, ratings: 0, notifications: 0, users: 0, rooms: 0, bookings: 0 })
 
   // Paginated table data — fetched independently, server-side
@@ -69,13 +70,15 @@ export default function AdminDashboard() {
       usersLiteResult,
       roomsLiteResult,
       bookingsLiteResult,
+      roomEventsLiteResult,
       messagesCountResult,
       ratingsCountResult,
       notificationsCountResult,
     ] = await Promise.all([
       supabase.from('profiles').select('id, full_name, role, created_at'),
-      supabase.from('rooms').select('id, owner_id, is_active, available_rooms, total_rooms, avg_rating, total_ratings, price, created_at'),
+      supabase.from('rooms').select('id, owner_id, title, city, is_active, available_rooms, total_rooms, avg_rating, total_ratings, price, created_at'),
       supabase.from('bookings').select('id, room_id, status, created_at'),
+      supabase.from('room_events').select('room_id, event_type, created_at'),
       supabase.from('messages').select('*', { count: 'exact', head: true }),
       supabase.from('ratings').select('*', { count: 'exact', head: true }),
       supabase.from('notifications').select('*', { count: 'exact', head: true }),
@@ -85,6 +88,7 @@ export default function AdminDashboard() {
       usersLiteResult.error ||
       roomsLiteResult.error ||
       bookingsLiteResult.error ||
+      roomEventsLiteResult.error ||
       messagesCountResult.error ||
       ratingsCountResult.error ||
       notificationsCountResult.error
@@ -99,10 +103,12 @@ export default function AdminDashboard() {
     const users = usersLiteResult.data || []
     const rooms = roomsLiteResult.data || []
     const bookings = bookingsLiteResult.data || []
+    const roomEvents = roomEventsLiteResult.data || []
 
     setAllUsersLite(users)
     setAllRoomsLite(rooms)
     setAllBookingsLite(bookings)
+    setAllRoomEventsLite(roomEvents)
     setOwnersById(users.reduce((map, user) => {
       map[user.id] = user
       return map
@@ -213,6 +219,60 @@ export default function AdminDashboard() {
 
   const pendingBookings = allBookingsLite.filter((booking) => booking.status === 'pending').length
 
+  const engagementTotals = useMemo(() => {
+    const totals = { views: 0, call_clicks: 0, chat_clicks: 0, book_clicks: 0 }
+    for (const event of allRoomEventsLite) {
+      if (event.event_type === 'view') totals.views++
+      else if (event.event_type === 'call_click') totals.call_clicks++
+      else if (event.event_type === 'chat_click') totals.chat_clicks++
+      else if (event.event_type === 'book_click') totals.book_clicks++
+    }
+    return totals
+  }, [allRoomEventsLite])
+
+  const engagementActivityData = useMemo(() => {
+    const days = Array.from({ length: 7 }, (_, index) => {
+      const date = new Date()
+      date.setDate(date.getDate() - (6 - index))
+      const key = date.toISOString().slice(0, 10)
+      return { key, day: date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }), views: 0, calls: 0, chats: 0 }
+    })
+
+    for (const event of allRoomEventsLite) {
+      if (!event.created_at) continue
+      const dateKey = new Date(event.created_at).toISOString().slice(0, 10)
+      const bucket = days.find((day) => day.key === dateKey)
+      if (!bucket) continue
+      if (event.event_type === 'view') bucket.views += 1
+      else if (event.event_type === 'call_click') bucket.calls += 1
+      else if (event.event_type === 'chat_click') bucket.chats += 1
+    }
+    return days
+  }, [allRoomEventsLite])
+
+  const topViewedRooms = useMemo(() => {
+    const stats = new Map()
+    for (const event of allRoomEventsLite) {
+      const current = stats.get(event.room_id) || { views: 0, calls: 0, chats: 0 }
+      if (event.event_type === 'view') current.views++
+      else if (event.event_type === 'call_click') current.calls++
+      else if (event.event_type === 'chat_click') current.chats++
+      stats.set(event.room_id, current)
+    }
+
+    return Array.from(stats.entries())
+      .map(([roomId, stat]) => {
+        const room = allRoomsLite.find((r) => r.id === roomId)
+        return {
+          title: room?.title || 'Deleted room',
+          city: room?.city || '-',
+          ...stat,
+        }
+      })
+      .sort((a, b) => b.views - a.views)
+      .slice(0, 10)
+  }, [allRoomEventsLite, allRoomsLite])
+
   const handleRefresh = () => {
     fetchAggregateData()
     fetchUsersPage(usersPage)
@@ -259,6 +319,13 @@ export default function AdminDashboard() {
             <StatCard label="Bookings" value={counts.bookings} accent="text-[#C87A65]" />
             <StatCard label="Pending Requests" value={pendingBookings} accent="text-amber-600" />
             <StatCard label="Messages" value={counts.messages} accent="text-[#769F86]" />
+          </div>
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <StatCard label="Total Room Views" value={engagementTotals.views} accent="text-[#A67C52]" />
+            <StatCard label="Call Clicks" value={engagementTotals.call_clicks} accent="text-[#769F86]" />
+            <StatCard label="Chat Clicks" value={engagementTotals.chat_clicks} accent="text-[#C87A65]" />
+            <StatCard label="Booking Clicks" value={engagementTotals.book_clicks} accent="text-amber-600" />
           </div>
 
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
@@ -365,6 +432,29 @@ export default function AdminDashboard() {
               />
             </Panel>
           </div>
+
+          <Panel title="7 Day Room Engagement (Views, Calls, Chats)">
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={engagementActivityData}>
+                <CartesianGrid stroke="rgba(0,0,0,0.05)" vertical={false} />
+                <XAxis dataKey="day" stroke="rgba(0,0,0,0.4)" tick={{ fontSize: 11 }} />
+                <YAxis stroke="rgba(0,0,0,0.4)" allowDecimals={false} tick={{ fontSize: 11 }} />
+                <Tooltip contentStyle={tooltipStyle} />
+                <Legend wrapperStyle={{ fontSize: '12px' }} />
+                <Bar dataKey="views" name="Views" fill="#A67C52" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="calls" name="Calls" fill="#769F86" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="chats" name="Chats" fill="#C87A65" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </Panel>
+
+          <Panel title="Most Viewed Rooms">
+            <ClientPaginatedTable
+              columns={['Room', 'City', 'Views', 'Calls', 'Chats']}
+              rows={topViewedRooms.map((room) => [room.title, room.city, room.views, room.calls, room.chats])}
+              emptyText="No room activity yet."
+            />
+          </Panel>
 
           <Panel title="Owner Performance">
             <ClientPaginatedTable

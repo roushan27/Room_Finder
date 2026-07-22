@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, lazy, Suspense } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
+import { logRoomEvent } from '../../lib/analytics'
 import RatingForm from './RatingForm'
 import { useModalBackButton } from '../../hooks/useModalBackButton'
 import { useToast } from '../../context/ToastContext'
@@ -50,6 +51,11 @@ export default function RoomDetailModal({ room, onClose, guestMode = false }) {
    fetchOwnerInfo()
  }, [room.owner_id])
 
+ useEffect(() => {
+   logRoomEvent(room.id, 'view', user?.id)
+   // eslint-disable-next-line react-hooks/exhaustive-deps
+ }, [room.id])
+
  const handleBook = async () => {
   if (guestMode || !user) {
     requireLogin()
@@ -70,6 +76,7 @@ export default function RoomDetailModal({ room, onClose, guestMode = false }) {
       toast.error(error.message || 'Booking failed. Please try again.')
     } else {
       toast.success('Booking request sent! Owner will confirm shortly.')
+      logRoomEvent(room.id, 'book_click', user?.id)
     }
   } catch (err) {
     toast.error('Something went wrong. Please try again.')
@@ -82,6 +89,7 @@ export default function RoomDetailModal({ room, onClose, guestMode = false }) {
       requireLogin()
       return
     }
+    logRoomEvent(room.id, 'chat_click', user?.id)
     navigate(`/chat/${room.id}/${room.owner_id}`)
   }
 
@@ -364,6 +372,7 @@ const handleCopyLink = async () => {
                 </button>
               ) : (
                 <a href={`tel:${room.phone_number}`}
+                  onClick={() => logRoomEvent(room.id, 'call_click', user?.id)}
                   className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-brand-sage/5 border border-brand-sage/20 text-brand-sage text-xs font-black uppercase tracking-wider hover:bg-brand-sage/10 transition shadow-2xs"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

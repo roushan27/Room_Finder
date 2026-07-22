@@ -92,7 +92,7 @@ export default function ChatPage() {
 
  
   const fetchOtherProfile = async () => {
-    const { data } = await supabase.from('profiles').select('full_name').eq('id', otherUserId).single()
+    const { data } = await supabase.from('profiles_public').select('full_name').eq('id', otherUserId).single()
     if (data) setOtherName(data.full_name)
   }
 

@@ -7,6 +7,7 @@ export default function RoomTable({ refreshTrigger, onEdit }) {
   const { user } = useAuth()
   const { toast } = useToast()
   const [rooms, setRooms] = useState([])
+  const [analytics, setAnalytics] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [deleteTarget, setDeleteTarget] = useState(null)
@@ -25,8 +26,33 @@ export default function RoomTable({ refreshTrigger, onEdit }) {
       .order('created_at', { ascending: false })
 
     if (error) setError(error.message)
-    else setRooms(data)
+    else {
+      setRooms(data)
+      fetchAnalytics(data.map((r) => r.id))
+    }
     setLoading(false)
+  }
+
+  const fetchAnalytics = async (roomIds) => {
+    if (!roomIds?.length) return
+    const { data, error } = await supabase
+      .from('room_events')
+      .select('room_id, event_type')
+      .in('room_id', roomIds)
+
+    if (error || !data) return
+
+    const summary = {}
+    for (const row of data) {
+      if (!summary[row.room_id]) {
+        summary[row.room_id] = { views: 0, call_clicks: 0, chat_clicks: 0, book_clicks: 0 }
+      }
+      if (row.event_type === 'view') summary[row.room_id].views++
+      else if (row.event_type === 'call_click') summary[row.room_id].call_clicks++
+      else if (row.event_type === 'chat_click') summary[row.room_id].chat_clicks++
+      else if (row.event_type === 'book_click') summary[row.room_id].book_clicks++
+    }
+    setAnalytics(summary)
   }
 
   const confirmDelete = (room) => setDeleteTarget(room)
@@ -97,6 +123,7 @@ export default function RoomTable({ refreshTrigger, onEdit }) {
                 <th className="p-4">City</th>
                 <th className="p-4">Pricing</th>
                 <th className="p-4">Metrics</th>
+                <th className="p-4">Views</th>
                 <th className="p-4">Visibility</th>
                 <th className="p-4 text-right">Operations</th>
               </tr>
@@ -133,6 +160,11 @@ export default function RoomTable({ refreshTrigger, onEdit }) {
                     ) : (
                       <span className="text-slate-500 font-normal text-[11px]">Unrated</span>
                     )}
+                  </td>
+                  <td className="p-4">
+                    <span className="text-[11px] font-bold text-slate-600" title="Total views">
+                      👁 {analytics[room.id]?.views || 0} views
+                    </span>
                   </td>
                   <td className="p-4">
                     <button
